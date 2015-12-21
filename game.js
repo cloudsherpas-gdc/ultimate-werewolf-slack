@@ -16,16 +16,16 @@ const ROLES = [
 
 const MESSAGES = {
   'Game': {
-    start: "Everyone, close your eyes.",
-    end: "Wake up!",
+    start: "*Everyone, close your eyes.*",
+    end: "*Wake up!* Voting ends in 5 minutes...",
   },
   'Werewolf': {
     start: "`Werewolves`, wake up and look for other werewolves.",
     end: "`Werewolves`, close your eyes.",
   },
   'Minion': {
-    start: "`Minion`, wake up. Werewolves, <no need to actually do this> stick out your thumb so the Minion can see who you are.",
-    end: "Werewolves, put your thumbs away <duh>. `Minion`, close your eyes.",
+    start: "`Minion`, wake up. `Werewolves`, <no need to actually do this> stick out your thumb so the `Minion` can see who you are.",
+    end: "`Werewolves`, put your thumbs away <duh>. `Minion`, close your eyes.",
   },
   'Seer': {
     start: "`Seer`, wake up. You may look at another player's card or two of the center cards.",
@@ -57,6 +57,7 @@ class Game {
     this.players = [];
     this.playerNames = [];
     this.roles = [];
+    this.origAssignments = {};
     this.assignments = {};
     this.gameID = Math.random().toString(36).substr(2, 5);
 
@@ -80,7 +81,7 @@ class Game {
         this.delegateRoles();
         this.announcePlayerRole();
         // We're ready to start the night!
-        this.startNight();
+        this.asyncDelay(this.startNight);
       }).bind(this));
   }
 
@@ -106,30 +107,31 @@ class Game {
   delegateRoles() {
     shuffle(this.roles);
     this.players.forEach(
-      (n, i) => this.assignments[n] = {id: this.players[i], role: this.roles[i]}
+      (n, i) => this.origAssignments[n] = {id: this.players[i], role: this.roles[i]}
     );
+    this.assignments = Object.assign({}, this.origAssignments);
   }
 
   announcePlayerRole() {
     // send out the roles via PM
-    Object.keys(this.assignments).forEach(
+    Object.keys(this.origAssignments).forEach(
         k => this.client.sendPM(
-                this.assignments[k].id,
-                "[`" + this.gameID + "`] Your role is `" + this.assignments[k].role + "`!"
+                this.origAssignments[k].id,
+                "[`" + this.gameID + "`] Your role is `" + this.origAssignments[k].role + "`!"
               )
       );
   }
 
   startNight() {
-    this.asyncDelay(this.sendStartMessage, 'Game')
-      .then((function(){return this.wakeUp('Werewolf');}).bind(this))
-      .then((function(){return this.wakeUp('Minion');}).bind(this))
-      .then((function(){return this.wakeUp('Seer');}).bind(this))
-      .then((function(){return this.wakeUp('Robber');}).bind(this))
-      .then((function(){return this.wakeUp('Troublemaker');}).bind(this))
-      .then((function(){return this.wakeUp('Drunk');}).bind(this))
-      .then((function(){return this.wakeUp('Insomniac');}).bind(this))
-      .then((function(){return this.asyncDelay(this.sendEndMessage, 'Game');}).bind(this));
+    return this.asyncDelay(this.sendStartMessage, 'Game')
+            .then((function(){return this.wakeUp('Werewolf');}).bind(this))
+            .then((function(){return this.wakeUp('Minion');}).bind(this))
+            .then((function(){return this.wakeUp('Seer');}).bind(this))
+            .then((function(){return this.wakeUp('Robber');}).bind(this))
+            .then((function(){return this.wakeUp('Troublemaker');}).bind(this))
+            .then((function(){return this.wakeUp('Drunk');}).bind(this))
+            .then((function(){return this.wakeUp('Insomniac');}).bind(this))
+            .then((function(){return this.asyncDelay(this.sendEndMessage, 'Game');}).bind(this));
   }
 
   wakeUp(role) {
@@ -148,20 +150,72 @@ class Game {
 
   initiateRoleSequence(role) {
     return new Promise((function(resolve, reject) {
+        this.nextStep = resolve;
         this.filterPlayersByRole(role).forEach(
-            k => this.client.sendPM(
-                    this.assignments[k].id,
-                    "[`" + this.gameID + "`] Your turn..."
-                  )
-          );
-        resolve();
+          (function(k) {
+            this.sendPMInGame(this.origAssignments[k].id, "Your turn...");
+            this.executePlayerTurn(this.origAssignments[k]);
+          }).bind(this));
+        if (role == 'Werewolf') this.nextStep();
       }).bind(this));
+  }
+
+  filterPlayersByOriginalRole(role) {
+    return Object.keys(this.origAssignments).filter(
+        k => role === this.origAssignments[k].role
+      );
   }
 
   filterPlayersByRole(role) {
     return Object.keys(this.assignments).filter(
         k => role === this.assignments[k].role
       );
+  }
+
+  sendPMInGame(recipient, message) {
+    this.client.sendPM(recipient, "[`" + this.gameID + "`] " + message);
+  }
+
+  executePlayerTurn(player) {
+    if (player.role == 'Werewolf') {
+      let werewolves = this.filterPlayersByRole('Werewolf');
+      if (werewolves.length == 2) {
+        // give a list of werewolves
+        this.sendPMInGame(player.id, "Werewolves: " + werewolves.join(' & '));
+      }
+      else {
+        // peek at center
+        this.sendPMInGame(player.id, "Center peek: " + this.roles[Math.floor(Math.random() * 3) + this.players.length]);
+      }
+    }
+
+    else if (player.role == 'Minion') {
+      let werewolves = this.filterPlayersByRole('Werewolf');
+      this.sendPMInGame(player.id, "Werewolves: " + werewolves.join(' & '));
+      this.nextStep();
+    }
+
+    else if (player.role == 'Seer') {
+      this.sendPMInGame(player.id, "`!w peek center` to peek at 2 center cards or `!w peek @username` to peek at a player's card");
+    }
+
+    else if (player.role == 'Robber') {
+      this.sendPMInGame(player.id, "`!w rob @username` to rob a player");
+    }
+
+    else if (player.role == 'Troublemaker') {
+      this.sendPMInGame(player.id, "`!w swap @userA @userB` to swap the players' cards");
+    }
+
+    else if (player.role == 'Drunk') {
+      this.sendPMInGame(player.id, "Your card's swapped to center");
+      this.nextStep();
+    }
+
+    else if (player.role == 'Insomniac') {
+      this.sendPMInGame(player.id, "Your card is...");
+      this.nextStep();
+    }
   }
 
   forceEnd() {
