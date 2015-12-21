@@ -122,24 +122,28 @@ class Game {
 
   startNight() {
     this.asyncDelay(this.sendStartMessage, 'Game')
-      // .then(this.wakeUp('Werewolf'))
-      // .then(this.wakeUp('Minion'))
-      // .then(this.wakeUp('Seer'))
-      // .then(this.wakeUp('Robber'))
-      // .then(this.wakeUp('Troublemaker'))
-      // .then(this.wakeUp('Drunk'))
-      // .then(this.wakeUp('Insomniac'))
-      .then(this.asyncDelay(this.sendEndMessage, 'Game'));
+      .then((function(){return this.wakeUp('Werewolf');}).bind(this))
+      .then((function(){return this.wakeUp('Minion');}).bind(this))
+      .then((function(){return this.wakeUp('Seer');}).bind(this))
+      .then((function(){return this.wakeUp('Robber');}).bind(this))
+      .then((function(){return this.wakeUp('Troublemaker');}).bind(this))
+      .then((function(){return this.wakeUp('Drunk');}).bind(this))
+      .then((function(){return this.wakeUp('Insomniac');}).bind(this))
+      .then((function(){return this.asyncDelay(this.sendEndMessage, 'Game');}).bind(this));
   }
 
   wakeUp(role) {
     return this.asyncDelay(this.sendStartMessage, role)
-            .then(this.initiateRoleSequence(role))
-            .then(this.asyncDelay(this.sendEndMessage, role));
+            .then((function(){return this.initiateRoleSequence(role);}).bind(this))
+            .then((function(){return this.asyncDelay(this.sendEndMessage, role);}).bind(this));
   }
 
   sendStartMessage(role) {
     this.client.sendMsg(this.channel, MESSAGES[role].start);
+  }
+
+  sendEndMessage(role) {
+    this.client.sendMsg(this.channel, MESSAGES[role].end);
   }
 
   initiateRoleSequence(role) {
@@ -152,10 +156,6 @@ class Game {
           );
         resolve();
       }).bind(this));
-  }
-
-  sendEndMessage(role) {
-    this.client.sendMsg(this.channel, MESSAGES[role].end);
   }
 
   filterPlayersByRole(role) {
