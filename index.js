@@ -22,15 +22,14 @@ slack.on('message', function (message) {
     var game;
 
     if (command == 'start') {
-
       games[channel] = new Game(slack, channel);
       // else if (channel.startsWith('D')) {
       //   console.log(message.text);
       // }
 
     }
-    else if (command == 'send') {
-      games[channel].sendRoles();
+    else if (command == 'end') {
+      games[channel].forceEnd();
     }
   }
 });
