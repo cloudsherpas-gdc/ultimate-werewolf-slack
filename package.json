@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "slack-client": "^1.5.1"
+    "slackbotapi": "^1.3.7"
   }
 }
