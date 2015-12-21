@@ -31,6 +31,22 @@ slack.on('message', function (message) {
       // }
     }
 
+    else if (command == 'peek') {
+      //
+    }
+
+    else if (command == 'rob') {
+      //
+    }
+
+    else if (command == 'swap') {
+      //
+    }
+
+    else if (command == 'vote') {
+      //
+    }
+
     else if (command == 'end') {
       if (!games.hasOwnProperty(channel)) {
         slack.sendMsg(channel, "Can't find a game to end...");
