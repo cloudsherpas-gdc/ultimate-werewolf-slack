@@ -86,7 +86,48 @@ class Game {
   }
 
   startNight() {
-    //
+    this.wakeUpWerewolves();
+    this.wakeUpMinion();
+    this.wakeUpSeer();
+    this.wakeUpRobber();
+    this.wakeUpTroublemaker();
+    this.wakeUpDrunk();
+    this.wakeUpInsomniac();
+  }
+
+  wakeUpWerewolves() {
+    // "Werewolves, wake up and look for other werewolves."
+    // "Werewolves, close your eyes."
+  }
+
+  wakeUpMinion() {
+    // "Minion, wake up. Werewolves, stick out your thumb so the minion can see who you are."
+    // "Werewolves, put your thumbs away. Minion, close your eyes."
+  }
+
+  wakeUpSeer() {
+    // "Seer, wake up. You may look at another player's card or two of the center cards."
+    // "Seer, close your eyes."
+  }
+
+  wakeUpRobber() {
+    // "Robber, wake up. You may exchange your card with another player's card, and then view your new card."
+    // "Robber, close your eyes."
+  }
+
+  wakeUpTroublemaker() {
+    // "Troublemaker, wake up. You may exchange cards between two other players."
+    // "Troublemaker, close your eyes."
+  }
+
+  wakeUpDrunk() {
+    // "Drunk, wake up and exchange your card with a card from the center."
+    // "Drunk, close your eyes."
+  }
+
+  wakeUpInsomniac() {
+    // "Insomniac, wake up and look at your card"
+    // "Insomniac, close your eyes."
   }
 
   forceEnd() {

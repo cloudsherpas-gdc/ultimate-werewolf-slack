@@ -19,16 +19,23 @@ slack.on('message', function (message) {
     var parts = message.text.split(' ');
     var command = parts[1];
     var args = parts.slice(2);
-    var game;
 
     if (command == 'start') {
+      if (games.hasOwnProperty(channel)) {
+        slack.sendMsg(channel, "A game is already in progress...");
+        return;
+      }
       games[channel] = new Game(slack, channel);
       // else if (channel.startsWith('D')) {
       //   console.log(message.text);
       // }
-
     }
+
     else if (command == 'end') {
+      if (!games.hasOwnProperty(channel)) {
+        slack.sendMsg(channel, "Can't find a game to end...");
+        return;
+      }
       games[channel].forceEnd();
     }
   }
