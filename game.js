@@ -14,6 +14,41 @@ const ROLES = [
   'Villager',
 ];
 
+const MESSAGES = {
+  'Game': {
+    start: "Everyone, close your eyes.",
+    end: "Wake up!",
+  },
+  'Werewolf': {
+    start: "`Werewolves`, wake up and look for other werewolves.",
+    end: "`Werewolves`, close your eyes.",
+  },
+  'Minion': {
+    start: "`Minion`, wake up. Werewolves, <no need to actually do this> stick out your thumb so the Minion can see who you are.",
+    end: "Werewolves, put your thumbs away <duh>. `Minion`, close your eyes.",
+  },
+  'Seer': {
+    start: "`Seer`, wake up. You may look at another player's card or two of the center cards.",
+    end: "`Seer`, close your eyes.",
+  },
+  'Robber': {
+    start: "`Robber`, wake up. You may exchange your card with another player's card, and then view your new card.",
+    end: "`Robber`, close your eyes.",
+  },
+  'Troublemaker': {
+    start: "`Troublemaker`, wake up. You may exchange cards between two other players.",
+    end: "`Troublemaker`, close your eyes.",
+  },
+  'Drunk': {
+    start: "`Drunk`, wake up and exchange your card with a card from the center.",
+    end: "`Drunk`, close your eyes.",
+  },
+  'Insomniac': {
+    start: "`Insomniac`, wake up and look at your card",
+    end: "`Insomniac`, close your eyes.",
+  },
+};
+
 class Game {
 
   constructor(slackClient, channel) {
@@ -86,108 +121,41 @@ class Game {
   }
 
   startNight() {
-    this.client.sendMsg(this.channel, "Everyone, close your eyes.");
-    // TODO: make this a single function
-    this.wakeUpWerewolves();
-    this.wakeUpMinion();
-    this.wakeUpSeer();
-    this.wakeUpRobber();
-    this.wakeUpTroublemaker();
-    this.wakeUpDrunk();
-    this.wakeUpInsomniac();
-    this.client.sendMsg(this.channel, "Wake up!");
+    this.asyncDelay(this.sendStartMessage, 'Game')
+      // .then(this.wakeUp('Werewolf'))
+      // .then(this.wakeUp('Minion'))
+      // .then(this.wakeUp('Seer'))
+      // .then(this.wakeUp('Robber'))
+      // .then(this.wakeUp('Troublemaker'))
+      // .then(this.wakeUp('Drunk'))
+      // .then(this.wakeUp('Insomniac'))
+      .then(this.asyncDelay(this.sendEndMessage, 'Game'));
   }
 
-  wakeUpWerewolves() {
-    // TODO: add some delays on each message
-    this.client.sendMsg(this.channel, "`Werewolves`, wake up and look for other werewolves.");
-
-    this.filterPlayersByRole('Werewolf').forEach(
-        k => this.client.sendPM(
-                this.assignments[k].id,
-                "[`" + this.gameID + "`] Your turn..."
-              )
-      );
-
-    this.client.sendMsg(this.channel, "`Werewolves`, close your eyes.");
+  wakeUp(role) {
+    return this.asyncDelay(this.sendStartMessage, role)
+            .then(this.initiateRoleSequence(role))
+            .then(this.asyncDelay(this.sendEndMessage, role));
   }
 
-  wakeUpMinion() {
-    this.client.sendMsg(this.channel, "`Minion`, wake up. Werewolves, <no need to actually do this> stick out your thumb so the minion can see who you are.");
-
-    this.filterPlayersByRole('Minion').forEach(
-        k => this.client.sendPM(
-                this.assignments[k].id,
-                "[`" + this.gameID + "`] Your turn..."
-              )
-      );
-
-    this.client.sendMsg(this.channel, "Werewolves, put your thumbs away <duh>. `Minion`, close your eyes.");
+  sendStartMessage(role) {
+    this.client.sendMsg(this.channel, MESSAGES[role].start);
   }
 
-  wakeUpSeer() {
-    this.client.sendMsg(this.channel, "`Seer`, wake up. You may look at another player's card or two of the center cards.");
-
-    this.filterPlayersByRole('Seer').forEach(
-        k => this.client.sendPM(
-                this.assignments[k].id,
-                "[`" + this.gameID + "`] Your turn..."
-              )
-      );
-
-    this.client.sendMsg(this.channel, "`Seer`, close your eyes.");
+  initiateRoleSequence(role) {
+    return new Promise((function(resolve, reject) {
+        this.filterPlayersByRole(role).forEach(
+            k => this.client.sendPM(
+                    this.assignments[k].id,
+                    "[`" + this.gameID + "`] Your turn..."
+                  )
+          );
+        resolve();
+      }).bind(this));
   }
 
-  wakeUpRobber() {
-    this.client.sendMsg(this.channel, "`Robber`, wake up. You may exchange your card with another player's card, and then view your new card.");
-
-    this.filterPlayersByRole('Robber').forEach(
-        k => this.client.sendPM(
-                this.assignments[k].id,
-                "[`" + this.gameID + "`] Your turn..."
-              )
-      );
-
-    this.client.sendMsg(this.channel, "`Robber`, close your eyes.");
-  }
-
-  wakeUpTroublemaker() {
-    this.client.sendMsg(this.channel, "`Troublemaker`, wake up. You may exchange cards between two other players.");
-
-    this.filterPlayersByRole('Troublemaker').forEach(
-        k => this.client.sendPM(
-                this.assignments[k].id,
-                "[`" + this.gameID + "`] Your turn..."
-              )
-      );
-
-    this.client.sendMsg(this.channel, "`Troublemaker`, close your eyes.");
-  }
-
-  wakeUpDrunk() {
-    this.client.sendMsg(this.channel, "`Drunk`, wake up and exchange your card with a card from the center.");
-
-    this.filterPlayersByRole('Drunk').forEach(
-        k => this.client.sendPM(
-                this.assignments[k].id,
-                "[`" + this.gameID + "`] Your turn..."
-              )
-      );
-
-    this.client.sendMsg(this.channel, "`Drunk`, close your eyes.");
-  }
-
-  wakeUpInsomniac() {
-    this.client.sendMsg(this.channel, "`Insomniac`, wake up and look at your card");
-
-    this.filterPlayersByRole('Insomniac').forEach(
-        k => this.client.sendPM(
-                this.assignments[k].id,
-                "[`" + this.gameID + "`] Your turn..."
-              )
-      );
-
-    this.client.sendMsg(this.channel, "`Insomniac`, close your eyes.");
+  sendEndMessage(role) {
+    this.client.sendMsg(this.channel, MESSAGES[role].end);
   }
 
   filterPlayersByRole(role) {
@@ -198,6 +166,16 @@ class Game {
 
   forceEnd() {
     //
+  }
+
+  asyncDelay(fn) {
+    let args = Array.prototype.slice.call(arguments, this.asyncDelay.length);
+    return new Promise((function(resolve, reject) {
+        setTimeout((function() {
+          fn.apply(this, args);
+          resolve();
+        }).bind(this), ((Math.random() * 2.5) + 5) * 1000);
+      }).bind(this));
   }
 
 }
