@@ -1,5 +1,19 @@
 'use strict';
 
+var ROLES = [
+  'Werewolf',
+  'Werewolf', // 2 werewolves
+  'Minion',
+  'Seer',
+  'Robber',
+  'Troublemaker',
+  'Drunk',
+  'Insomniac',
+  'Villager',
+  'Villager',
+  'Villager',
+];
+
 class Game {
 
   constructor(slackClient, channel) {
@@ -15,6 +29,7 @@ class Game {
       method = 'groups.info';
       entity = 'group';
     }
+    // TODO: problematic! we need this.players on instance creation but this is async
     this.client.reqAPI(method, {channel: this.channel},
       (function(data) {
         this.players = data[entity].members.slice();

@@ -2,19 +2,6 @@ var slackAPI = require('slackbotapi');
 var Game = require('./game');
 
 var CMD_PREFIX = '!w';
-var ROLES = [
-  'Werewolf',
-  'Werewolf', // 2 werewolves
-  'Minion',
-  'Seer',
-  'Robber',
-  'Troublemaker',
-  'Drunk',
-  'Insomniac',
-  'Villager',
-  'Villager',
-  'Villager',
-];
 
 var token = '' || process.env.SLACK_API_TOKEN;
 
