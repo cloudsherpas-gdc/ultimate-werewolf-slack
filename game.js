@@ -86,7 +86,8 @@ class Game {
   }
 
   startNight() {
-    // "Everyone, close your eyes."
+    this.client.sendMsg(this.channel, "Everyone, close your eyes.");
+    // TODO: make this a single function
     this.wakeUpWerewolves();
     this.wakeUpMinion();
     this.wakeUpSeer();
@@ -94,10 +95,11 @@ class Game {
     this.wakeUpTroublemaker();
     this.wakeUpDrunk();
     this.wakeUpInsomniac();
-    // "Wake up!"
+    this.client.sendMsg(this.channel, "Wake up!");
   }
 
   wakeUpWerewolves() {
+    // TODO: add some delays on each message
     this.client.sendMsg(this.channel, "Werewolves, wake up and look for other werewolves.");
 
     this.filterPlayersByRole('Werewolf').forEach(
