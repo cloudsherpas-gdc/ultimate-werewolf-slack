@@ -26,21 +26,27 @@ slack.on('message', function (message) {
         return;
       }
       games[channel] = new Game(slack, channel);
-      // else if (channel.startsWith('D')) {
-      //   console.log(message.text);
-      // }
     }
 
     else if (command == 'peek') {
-      //
+      if (!channel.startsWith('D')) {
+        console.log("You just can't peek at cards blatantly");
+        return;
+      }
     }
 
     else if (command == 'rob') {
-      //
+      if (!channel.startsWith('D')) {
+        console.log("Please don't cause trouble");
+        return;
+      }
     }
 
     else if (command == 'swap') {
-      //
+      if (!channel.startsWith('D')) {
+        console.log("Please don't cause trouble");
+        return;
+      }
     }
 
     else if (command == 'vote') {
@@ -53,6 +59,10 @@ slack.on('message', function (message) {
         return;
       }
       games[channel].forceEnd();
+    }
+
+    else if (command == 'help') {
+      //
     }
   }
 });
