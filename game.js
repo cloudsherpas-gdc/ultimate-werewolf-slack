@@ -86,6 +86,7 @@ class Game {
   }
 
   startNight() {
+    // "Everyone, close your eyes."
     this.wakeUpWerewolves();
     this.wakeUpMinion();
     this.wakeUpSeer();
@@ -93,41 +94,104 @@ class Game {
     this.wakeUpTroublemaker();
     this.wakeUpDrunk();
     this.wakeUpInsomniac();
+    // "Wake up!"
   }
 
   wakeUpWerewolves() {
-    // "Werewolves, wake up and look for other werewolves."
-    // "Werewolves, close your eyes."
+    this.client.sendMsg(this.channel, "Werewolves, wake up and look for other werewolves.");
+
+    this.filterPlayersByRole('Werewolf').forEach(
+        k => this.client.sendPM(
+                this.assignments[k].id,
+                "[`" + this.gameID + "`] Your turn..."
+              )
+      );
+
+    this.client.sendMsg(this.channel, "Werewolves, close your eyes.");
   }
 
   wakeUpMinion() {
-    // "Minion, wake up. Werewolves, stick out your thumb so the minion can see who you are."
-    // "Werewolves, put your thumbs away. Minion, close your eyes."
+    this.client.sendMsg(this.channel, "Minion, wake up. Werewolves, <no need to actually do this> stick out your thumb so the minion can see who you are.");
+
+    this.filterPlayersByRole('Minion').forEach(
+        k => this.client.sendPM(
+                this.assignments[k].id,
+                "[`" + this.gameID + "`] Your turn..."
+              )
+      );
+
+    this.client.sendMsg(this.channel, "Werewolves, put your thumbs away <duh>. Minion, close your eyes.");
   }
 
   wakeUpSeer() {
-    // "Seer, wake up. You may look at another player's card or two of the center cards."
-    // "Seer, close your eyes."
+    this.client.sendMsg(this.channel, "Seer, wake up. You may look at another player's card or two of the center cards.");
+
+    this.filterPlayersByRole('Seer').forEach(
+        k => this.client.sendPM(
+                this.assignments[k].id,
+                "[`" + this.gameID + "`] Your turn..."
+              )
+      );
+
+    this.client.sendMsg(this.channel, "Seer, close your eyes.");
   }
 
   wakeUpRobber() {
-    // "Robber, wake up. You may exchange your card with another player's card, and then view your new card."
-    // "Robber, close your eyes."
+    this.client.sendMsg(this.channel, "Robber, wake up. You may exchange your card with another player's card, and then view your new card.");
+
+    this.filterPlayersByRole('Robber').forEach(
+        k => this.client.sendPM(
+                this.assignments[k].id,
+                "[`" + this.gameID + "`] Your turn..."
+              )
+      );
+
+    this.client.sendMsg(this.channel, "Robber, close your eyes.");
   }
 
   wakeUpTroublemaker() {
-    // "Troublemaker, wake up. You may exchange cards between two other players."
-    // "Troublemaker, close your eyes."
+    this.client.sendMsg(this.channel, "Troublemaker, wake up. You may exchange cards between two other players.");
+
+    this.filterPlayersByRole('Troublemaker').forEach(
+        k => this.client.sendPM(
+                this.assignments[k].id,
+                "[`" + this.gameID + "`] Your turn..."
+              )
+      );
+
+    this.client.sendMsg(this.channel, "Troublemaker, close your eyes.");
   }
 
   wakeUpDrunk() {
-    // "Drunk, wake up and exchange your card with a card from the center."
-    // "Drunk, close your eyes."
+    this.client.sendMsg(this.channel, "Drunk, wake up and exchange your card with a card from the center.");
+
+    this.filterPlayersByRole('Drunk').forEach(
+        k => this.client.sendPM(
+                this.assignments[k].id,
+                "[`" + this.gameID + "`] Your turn..."
+              )
+      );
+
+    this.client.sendMsg(this.channel, "Drunk, close your eyes.");
   }
 
   wakeUpInsomniac() {
-    // "Insomniac, wake up and look at your card"
-    // "Insomniac, close your eyes."
+    this.client.sendMsg(this.channel, "Insomniac, wake up and look at your card");
+
+    this.filterPlayersByRole('Insomniac').forEach(
+        k => this.client.sendPM(
+                this.assignments[k].id,
+                "[`" + this.gameID + "`] Your turn..."
+              )
+      );
+
+    this.client.sendMsg(this.channel, "Insomniac, close your eyes.");
+  }
+
+  filterPlayersByRole(role) {
+    return Object.keys(this.assignments).filter(
+        k => role === this.assignments[k].role
+      );
   }
 
   forceEnd() {
