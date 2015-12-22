@@ -29,14 +29,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "A game is already in progress...");
         return;
       }
-
-      try {
-        games[channel] = new Game(slack, channel, args);
-      }
-      catch (e) {
-        slack.sendMsg(channel, e);
-        delete games[channel];
-      }
+      games[channel] = new Game(slack, channel, args);
     }
 
     else if (command == 'peek') {
@@ -73,7 +66,7 @@ slack.on('message', function (message) {
       }
     }
 
-    else if (command == 'end') {
+    else if (command == 'force-end') {
       if (!channel.startsWith('C') && !channel.startsWith('G')) {
         slack.sendMsg(channel, "You can't do this through PM");
         return;
@@ -83,6 +76,7 @@ slack.on('message', function (message) {
         return;
       }
       games[channel].forceEnd();
+      delete games[channel];
     }
 
     else if (command == 'help') {

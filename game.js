@@ -60,6 +60,7 @@ class Game {
     this.origAssignments = {};
     this.assignments = {};
     this.gameID = Math.random().toString(36).substr(2, 5);
+    this.currentTurn = 'Beginning';
 
     // announce GameID
     let announce = "A new game of *Ultimate Werewolf*, GameID `" + this.gameID + "`";
@@ -80,8 +81,9 @@ class Game {
         let members = data[entity].members;
         if (players.length) {
           let listedPlayers = players.map(p => p.substring(2, p.length - 1));
-          if (!listedPlayers.every(function(v) { return members.indexOf(v) > -1; })) {
-            throw "Not everyone is in the room";
+          if (!listedPlayers.every( v => members.indexOf(v) > -1 )) {
+            this.client.sendMsg(channel, "Not everyone is in the room. Please type `!w force-end` to force the game to end.");
+            return;
           }
           members = listedPlayers;
         }
@@ -335,7 +337,8 @@ class Game {
   }
 
   forceEnd() {
-    //
+    this.client.sendMsg(this.channel, "_Game was forced to end_");
+    this.currentTurn = 'Complete';
   }
 
   asyncDelay(fn) {
