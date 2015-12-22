@@ -21,6 +21,10 @@ slack.on('message', function (message) {
     var args = parts.slice(2);
 
     if (command == 'start') {
+      if (!channel.startsWith('C') && !channel.startsWith('G')) {
+        slack.sendMsg(channel, "You can't do this through PM");
+        return;
+      }
       if (games.hasOwnProperty(channel)) {
         slack.sendMsg(channel, "A game is already in progress...");
         return;
@@ -53,10 +57,17 @@ slack.on('message', function (message) {
     }
 
     else if (command == 'vote') {
-      //
+      if (!channel.startsWith('C') && !channel.startsWith('G')) {
+        slack.sendMsg(channel, "You can't do this through PM");
+        return;
+      }
     }
 
     else if (command == 'end') {
+      if (!channel.startsWith('C') && !channel.startsWith('G')) {
+        slack.sendMsg(channel, "You can't do this through PM");
+        return;
+      }
       if (!games.hasOwnProperty(channel)) {
         slack.sendMsg(channel, "Can't find a game to end...");
         return;
