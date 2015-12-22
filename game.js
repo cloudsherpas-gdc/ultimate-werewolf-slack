@@ -224,8 +224,8 @@ class Game {
     let seer = this.filterPlayersByOriginalRole('Seer');
     if (!seer.length) {
       this.sendPMInGame(sender, "But you're not a Seer!");
-      let playerIdx = this.players.indexOf(sender);
-      let announce = this.playerNames[playerIdx] + " is trying to be a Seer!";
+      let senderIdx = this.players.indexOf(sender);
+      let announce = this.playerNames[senderIdx] + " is trying to be a Seer!";
       this.client.sendMsg(this.channel, announce);
       return;
     }
@@ -253,25 +253,39 @@ class Game {
     this.nextStep();
   }
 
-  robberRob() {
+  robberRob(sender, target) {
     // role check
     let robber = this.filterPlayersByOriginalRole('Robber');
     if (!robber.length) {
       this.sendPMInGame(sender, "But you're not a Robber!");
-      let playerIdx = this.players.indexOf(sender);
-      let announce = this.playerNames[playerIdx] + " is trying to be a Robber!";
+      let senderIdx = this.players.indexOf(sender);
+      let announce = this.playerNames[senderIdx] + " is trying to be a Robber!";
       this.client.sendMsg(this.channel, announce);
       return;
     }
+
+    let targetName = target.slice(1);
+    if (!this.assignments.hasOwnProperty(targetName)) {
+      this.sendPMInGame(sender, "There are no players with that username");
+      return;
+    }
+    let senderIdx = this.players.indexOf(sender);
+    let senderName = this.playerNames[senderIdx];
+    let oldRole = this.assignments[senderName].role;
+    let newRole = this.assignments[targetName].role;
+    this.assignments[senderName].role = newRole;
+    this.assignments[targetName].role = oldRole;
+    this.sendPMInGame(sender, "Your new role is `" + newRole + "`");
+    this.nextStep();
   }
 
-  troublemakerSwap() {
+  troublemakerSwap(sender, targets) {
     // role check
     let troublemaker = this.filterPlayersByOriginalRole('Troublemaker');
     if (!troublemaker.length) {
       this.sendPMInGame(sender, "But you're not a Troublemaker!");
-      let playerIdx = this.players.indexOf(sender);
-      let announce = this.playerNames[playerIdx] + " is trying to be a Troublemaker!";
+      let senderIdx = this.players.indexOf(sender);
+      let announce = this.playerNames[senderIdx] + " is trying to be a Troublemaker!";
       this.client.sendMsg(this.channel, announce);
       return;
     }

@@ -41,6 +41,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
+      games[channel].robberRob(message.user, args[0]);
     }
 
     else if (command == 'swap') {
