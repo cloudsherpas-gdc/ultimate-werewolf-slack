@@ -135,6 +135,10 @@ class Game {
   }
 
   wakeUp(role) {
+    // Role not included in the game
+    if (this.roles.indexOf(role) === -1)
+      return Promise.resolve();
+
     return this.asyncDelay(this.sendStartMessage, role)
             .then((function(){return this.initiateRoleSequence(role);}).bind(this))
             .then((function(){return this.asyncDelay(this.sendEndMessage, role);}).bind(this));
