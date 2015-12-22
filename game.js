@@ -156,7 +156,6 @@ class Game {
             this.sendPMInGame(this.origAssignments[k].id, "Your turn...");
             this.executePlayerTurn(this.origAssignments[k]);
           }).bind(this));
-        if (role == 'Werewolf') this.nextStep();
       }).bind(this));
   }
 
@@ -179,14 +178,16 @@ class Game {
   executePlayerTurn(player) {
     if (player.role == 'Werewolf') {
       let werewolves = this.filterPlayersByRole('Werewolf');
-      if (werewolves.length == 2) {
+      if (werewolves.length > 1) {
         // give a list of werewolves
         this.sendPMInGame(player.id, "Werewolves: " + werewolves.join(' & '));
       }
       else {
         // peek at center
-        this.sendPMInGame(player.id, "Center peek: " + this.roles[Math.floor(Math.random() * 3) + this.players.length]);
+        let center_idx = Math.floor(Math.random() * 3) + this.players.length;
+        this.sendPMInGame(player.id, "Center peek: `" + this.roles[center_idx] + "`");
       }
+      this.nextStep();
     }
 
     else if (player.role == 'Minion') {
@@ -216,6 +217,68 @@ class Game {
       this.sendPMInGame(player.id, "Your card is...");
       this.nextStep();
     }
+  }
+
+  seerPeek(sender, target) {
+    // role check
+    let seer = this.filterPlayersByOriginalRole('Seer');
+    if (!seer.length) {
+      this.sendPMInGame(sender, "But you're not a Seer!");
+      let playerIdx = this.players.indexOf(sender);
+      let announce = this.playerNames[playerIdx] + " is trying to be a Seer!";
+      this.client.sendMsg(this.channel, announce);
+      return;
+    }
+
+    // peek 2 cards center
+    if (target == 'center') {
+      let center_idx1 = -1;
+      let center_idx2 = -1;
+      do {
+        center_idx1 = Math.floor(Math.random() * 3) + this.players.length;
+        center_idx2 = Math.floor(Math.random() * 3) + this.players.length;
+      } while (center_idx1 == center_idx2);
+      this.sendPMInGame(sender, "Center peek: `" + this.roles[center_idx1] + "`, `" + this.roles[center_idx2] + "`");
+    }
+
+    // peek player card
+    else {
+      let targetName = target.slice(1);
+      if (!this.assignments.hasOwnProperty(targetName)) {
+        this.sendPMInGame(sender, "There are no players with that username");
+        return;
+      }
+      this.sendPMInGame(sender, targetName + "'s role is `" + this.assignments[targetName].role + "`");
+    }
+    this.nextStep();
+  }
+
+  robberRob() {
+    // role check
+    let robber = this.filterPlayersByOriginalRole('Robber');
+    if (!robber.length) {
+      this.sendPMInGame(sender, "But you're not a Robber!");
+      let playerIdx = this.players.indexOf(sender);
+      let announce = this.playerNames[playerIdx] + " is trying to be a Robber!";
+      this.client.sendMsg(this.channel, announce);
+      return;
+    }
+  }
+
+  troublemakerSwap() {
+    // role check
+    let troublemaker = this.filterPlayersByOriginalRole('Troublemaker');
+    if (!troublemaker.length) {
+      this.sendPMInGame(sender, "But you're not a Troublemaker!");
+      let playerIdx = this.players.indexOf(sender);
+      let announce = this.playerNames[playerIdx] + " is trying to be a Troublemaker!";
+      this.client.sendMsg(this.channel, announce);
+      return;
+    }
+  }
+
+  lynchingVote() {
+    //
   }
 
   forceEnd() {

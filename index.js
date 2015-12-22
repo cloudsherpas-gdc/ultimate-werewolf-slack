@@ -30,21 +30,22 @@ slack.on('message', function (message) {
 
     else if (command == 'peek') {
       if (!channel.startsWith('D')) {
-        console.log("You just can't peek at cards blatantly");
+        slack.sendMsg(channel, "You just can't peek at cards blatantly");
         return;
       }
+      games[channel].seerPeek(message.user, args[0]);
     }
 
     else if (command == 'rob') {
       if (!channel.startsWith('D')) {
-        console.log("Please don't cause trouble");
+        slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
     }
 
     else if (command == 'swap') {
       if (!channel.startsWith('D')) {
-        console.log("Please don't cause trouble");
+        slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
     }
