@@ -49,6 +49,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
+      games[channel].troublemakerSwap(message.user, args[0], args[1]);
     }
 
     else if (command == 'vote') {

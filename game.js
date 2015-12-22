@@ -245,7 +245,7 @@ class Game {
     else {
       let targetName = target.slice(1);
       if (!this.assignments.hasOwnProperty(targetName)) {
-        this.sendPMInGame(sender, "There are no players with that username");
+        this.sendPMInGame(sender, "There are no players with that username: " + targetName);
         return;
       }
       this.sendPMInGame(sender, targetName + "'s role is `" + this.assignments[targetName].role + "`");
@@ -266,7 +266,7 @@ class Game {
 
     let targetName = target.slice(1);
     if (!this.assignments.hasOwnProperty(targetName)) {
-      this.sendPMInGame(sender, "There are no players with that username");
+      this.sendPMInGame(sender, "There are no players with that username: " + targetName);
       return;
     }
     let senderIdx = this.players.indexOf(sender);
@@ -279,7 +279,7 @@ class Game {
     this.nextStep();
   }
 
-  troublemakerSwap(sender, targets) {
+  troublemakerSwap(sender, target1, target2) {
     // role check
     let troublemaker = this.filterPlayersByOriginalRole('Troublemaker');
     if (!troublemaker.length) {
@@ -289,6 +289,23 @@ class Game {
       this.client.sendMsg(this.channel, announce);
       return;
     }
+
+    let targetName1 = target1.slice(1);
+    if (!this.assignments.hasOwnProperty(targetName1)) {
+      this.sendPMInGame(sender, "There are no players with that username: " + targetName1);
+      return;
+    }
+    let targetName2 = target2.slice(1);
+    if (!this.assignments.hasOwnProperty(targetName2)) {
+      this.sendPMInGame(sender, "There are no players with that username: " + targetName2);
+      return;
+    }
+    let role1 = this.assignments[targetName1].role;
+    let role2 = this.assignments[targetName2].role;
+    this.assignments[targetName1].role = role2;
+    this.assignments[targetName2].role = role1;
+    this.sendPMInGame(sender, "You swapped their cards");
+    this.nextStep();
   }
 
   lynchingVote() {
