@@ -151,11 +151,19 @@ class Game {
   initiateRoleSequence(role) {
     return new Promise((function(resolve, reject) {
         this.nextStep = resolve;
-        this.filterPlayersByRole(role).forEach(
-          (function(k) {
-            this.sendPMInGame(this.origAssignments[k].id, "Your turn...");
-            this.executePlayerTurn(this.origAssignments[k]);
-          }).bind(this));
+        let playersThisTurn = this.filterPlayersByRole(role);
+        if (playersThisTurn.length) {
+          playersThisTurn.forEach(
+            (function(k) {
+              this.sendPMInGame(this.origAssignments[k].id, "Your turn...");
+              this.executePlayerTurn(this.origAssignments[k]);
+            }).bind(this));
+        }
+        else {
+          setTimeout((function() {
+            this.nextStep();
+          }).bind(this), ((Math.random() * 2.5) + 5) * 1000);
+        }
       }).bind(this));
   }
 
