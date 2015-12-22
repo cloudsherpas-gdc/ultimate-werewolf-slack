@@ -24,8 +24,8 @@ const MESSAGES = {
     end: "`Werewolves`, close your eyes.",
   },
   'Minion': {
-    start: "`Minion`, wake up. `Werewolves`, <no need to actually do this> stick out your thumb so the `Minion` can see who you are.",
-    end: "`Werewolves`, put your thumbs away <duh>. `Minion`, close your eyes.",
+    start: "`Minion`, wake up. `Werewolves`, stick out your thumb so the `Minion` can see who you are.",
+    end: "`Werewolves`, put your thumbs away. `Minion`, close your eyes.",
   },
   'Seer': {
     start: "`Seer`, wake up. You may look at another player's card or two of the center cards.",
@@ -51,7 +51,7 @@ const MESSAGES = {
 
 class Game {
 
-  constructor(slackClient, channel) {
+  constructor(slackClient, channel, players) {
     this.client = slackClient;
     this.channel = channel;
     this.players = [];
@@ -74,22 +74,36 @@ class Game {
       method = 'groups.info';
       entity = 'group';
     }
-    this.client.reqAPI(method, {channel: this.channel},
-      (function(data) {
-        this.getPlayers(data[entity].members);
-        this.announceRoles();
-        this.delegateRoles();
-        this.announcePlayerRole();
-        // We're ready to start the night!
-        this.asyncDelay(this.startNight);
-      }).bind(this));
+
+    if (players.length) {
+      this.getPlayers(players.map(p => p.substring(2, p.length - 1)));
+      this.announceRoles();
+      this.delegateRoles();
+      this.announcePlayerRole();
+      // We're ready to start the night!
+      this.asyncDelay(this.startNight);
+    }
+
+    // Players were not specified so fetching them async
+    else {
+      this.client.reqAPI(method, {channel: this.channel},
+        (function(data) {
+          this.getPlayers(data[entity].members);
+          this.announceRoles();
+          this.delegateRoles();
+          this.announcePlayerRole();
+          // We're ready to start the night!
+          this.asyncDelay(this.startNight);
+        }).bind(this));
+    }
   }
 
   getPlayers(channelMembers) {
+    console.log(channelMembers);
     // get the players
     this.players = channelMembers.slice();
     let idx = this.players.indexOf(this.client.slackData.self.id);
-    this.players.splice(idx, 1);
+    if (idx > -1) this.players.splice(idx, 1);
     // limit players to # of roles
     this.players = this.players.slice(0, ROLES.length);
     this.playerNames = this.players.slice().map(p => this.client.getUser(p).name);
@@ -197,7 +211,7 @@ class Game {
       else {
         // peek at center
         let center_idx = Math.floor(Math.random() * 3) + this.players.length;
-        this.sendPMInGame(player.id, "Center peek: `" + this.roles[center_idx] + "`");
+        this.sendPMInGame(player.id, "You are the only werewolf, center peek: `" + this.roles[center_idx] + "`");
       }
       this.nextStep();
     }

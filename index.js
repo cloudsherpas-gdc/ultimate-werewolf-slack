@@ -29,7 +29,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "A game is already in progress...");
         return;
       }
-      games[channel] = new Game(slack, channel);
+      games[channel] = new Game(slack, channel, args);
     }
 
     else if (command == 'peek') {
