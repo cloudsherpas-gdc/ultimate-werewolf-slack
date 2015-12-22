@@ -29,7 +29,14 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "A game is already in progress...");
         return;
       }
-      games[channel] = new Game(slack, channel, args);
+
+      try {
+        games[channel] = new Game(slack, channel, args);
+      }
+      catch (e) {
+        slack.sendMsg(channel, e);
+        delete games[channel];
+      }
     }
 
     else if (command == 'peek') {
@@ -37,6 +44,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "You just can't peek at cards blatantly");
         return;
       }
+      // FIXME: get REAL channel
       games[channel].seerPeek(message.user, args[0]);
     }
 
@@ -45,6 +53,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
+      // FIXME: get REAL channel
       games[channel].robberRob(message.user, args[0]);
     }
 
@@ -53,6 +62,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
+      // FIXME: get REAL channel
       games[channel].troublemakerSwap(message.user, args[0], args[1]);
     }
 

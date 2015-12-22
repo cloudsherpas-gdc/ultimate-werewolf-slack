@@ -75,27 +75,23 @@ class Game {
       entity = 'group';
     }
 
-    if (players.length) {
-      this.getPlayers(players.map(p => p.substring(2, p.length - 1)));
-      this.announceRoles();
-      this.delegateRoles();
-      this.announcePlayerRole();
-      // We're ready to start the night!
-      this.asyncDelay(this.startNight);
-    }
-
-    // Players were not specified so fetching them async
-    else {
-      this.client.reqAPI(method, {channel: this.channel},
-        (function(data) {
-          this.getPlayers(data[entity].members);
-          this.announceRoles();
-          this.delegateRoles();
-          this.announcePlayerRole();
-          // We're ready to start the night!
-          this.asyncDelay(this.startNight);
-        }).bind(this));
-    }
+    this.client.reqAPI(method, {channel: this.channel},
+      (function(data) {
+        let members = data[entity].members;
+        if (players.length) {
+          let listedPlayers = players.map(p => p.substring(2, p.length - 1));
+          if (!listedPlayers.every(function(v) { return members.indexOf(v) > -1; })) {
+            throw "Not everyone is in the room";
+          }
+          members = listedPlayers;
+        }
+        this.getPlayers(members);
+        this.announceRoles();
+        this.delegateRoles();
+        this.announcePlayerRole();
+        // We're ready to start the night!
+        this.asyncDelay(this.startNight);
+      }).bind(this));
   }
 
   getPlayers(channelMembers) {
@@ -120,7 +116,7 @@ class Game {
 
   delegateRoles() {
     shuffle(this.roles);
-    this.players.forEach(
+    this.playerNames.forEach(
       (n, i) => this.origAssignments[n] = {id: this.players[i], role: this.roles[i]}
     );
     this.assignments = Object.assign({}, this.origAssignments);
