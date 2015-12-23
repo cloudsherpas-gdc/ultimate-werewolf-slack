@@ -148,6 +148,8 @@ class Game {
   }
 
   wakeUp(role) {
+    this.currentTurn = role;
+
     // Role not included in the game
     if (this.roles.indexOf(role) === -1)
       return Promise.resolve();
@@ -155,6 +157,12 @@ class Game {
     return this.asyncDelay(this.sendStartMessage, role)
             .then((function(){return this.initiateRoleSequence(role);}).bind(this))
             .then((function(){return this.asyncDelay(this.sendEndMessage, role);}).bind(this));
+  }
+
+  beginVoting() {
+    this.currentTurn = 'Voting';
+    // TODO: Implement 5 minute time limit
+    return Promise.resolve();
   }
 
   sendStartMessage(role) {
@@ -272,6 +280,12 @@ class Game {
       return;
     }
 
+    // check current turn
+    if (this.currentTurn != 'Seer') {
+      this.sendPMInGame(sender, "This is not the right time");
+      return;
+    }
+
     // peek 2 cards center
     if (target == 'center') {
       let center_idx1 = -1;
@@ -306,6 +320,12 @@ class Game {
       return;
     }
 
+    // check current turn
+    if (this.currentTurn != 'Robber') {
+      this.sendPMInGame(sender, "This is not the right time");
+      return;
+    }
+
     let targetName = target.slice(1);
     if (!this.assignments.hasOwnProperty(targetName)) {
       this.sendPMInGame(sender, "There are no players with that username: " + targetName);
@@ -332,6 +352,12 @@ class Game {
       return;
     }
 
+    // check current turn
+    if (this.currentTurn != 'Troublemaker') {
+      this.sendPMInGame(sender, "This is not the right time");
+      return;
+    }
+
     let targetName1 = target1.slice(1);
     if (!this.assignments.hasOwnProperty(targetName1)) {
       this.sendPMInGame(sender, "There are no players with that username: " + targetName1);
@@ -351,6 +377,11 @@ class Game {
   }
 
   lynchingVote(sender, target) {
+    // check current turn
+    if (this.currentTurn != 'Voting') {
+      this.sendPMInGame(sender, "This is not the right time");
+      return;
+    }
     // TODO: implementation
   }
 

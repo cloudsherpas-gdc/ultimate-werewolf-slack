@@ -26,7 +26,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "You can't do this through PM");
         return;
       }
-      if (games.hasOwnProperty(channel)) {
+      if (games.hasOwnProperty(channel) && games[channel].currentTurn != 'Complete') {
         slack.sendMsg(channel, "A game is already in progress...");
         return;
       }
@@ -44,7 +44,6 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Can't find a game to do this action...");
         return;
       }
-      // TODO: currentTurn check
       channel = registry[gameID];
       games[channel].seerPeek(message.user, args[0]);
     }
@@ -59,7 +58,6 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Can't find a game to do this action...");
         return;
       }
-      // TODO: currentTurn check
       channel = registry[gameID];
       games[channel].robberRob(message.user, args[0]);
     }
@@ -74,7 +72,6 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Can't find a game to do this action...");
         return;
       }
-      // TODO: currentTurn check
       channel = registry[gameID];
       games[channel].troublemakerSwap(message.user, args[0], args[1]);
     }
@@ -84,7 +81,6 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "You can't do this through PM");
         return;
       }
-      // TODO: currentTurn check
       games[channel].lynchingVote(message.user, args[0]);
     }
 
