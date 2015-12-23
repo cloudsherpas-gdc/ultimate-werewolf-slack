@@ -392,7 +392,7 @@ class Game {
   seerPeek(sender, target) {
     // role check
     let seer = this.filterPlayersByOriginalRole('Seer');
-    if (!seer.length) {
+    if (!seer.length || (seer.length && seer[0] == sender)) {
       this.sendPMInGame(sender, "Hey, you're not a Seer!");
       this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Seer!");
       return;
@@ -430,7 +430,7 @@ class Game {
   robberRob(sender, target) {
     // role check
     let robber = this.filterPlayersByOriginalRole('Robber');
-    if (!robber.length) {
+    if (!robber.length || (robber.length && robber[0] == sender)) {
       this.sendPMInGame(sender, "Hey, you're not a Robber!");
       this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Robber!");
       return;
@@ -458,7 +458,7 @@ class Game {
   troublemakerSwap(sender, target1, target2) {
     // role check
     let troublemaker = this.filterPlayersByOriginalRole('Troublemaker');
-    if (!troublemaker.length) {
+    if (!troublemaker.length || (troublemaker.length && troublemaker[0] == sender)) {
       this.sendPMInGame(sender, "Hey, you're not a Troublemaker!");
       this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Troublemaker!");
       return;
@@ -489,6 +489,7 @@ class Game {
     let role2 = this.roles[target2];
     this.roles[target1] = role2;
     this.roles[target2] = role1;
+    // TODO: Indicate names
     this.sendPMInGame(sender, "You swapped their cards");
     this.nextStep();
   }
