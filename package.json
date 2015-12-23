@@ -1,6 +1,6 @@
 {
   "name": "ultimate-werewolf-slack",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A bot that moderates Ultimate Werewolf games",
   "keywords": ["ultimate", "werewolf", "slack", "bot"],
   "homepage": "https://github.com/yowmamasita/ultimate-werewolf-slack",
