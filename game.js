@@ -115,7 +115,7 @@ class Game {
     if (idx >= 0) this.players.splice(idx, 1);
     // limit players to # of roles
     this.players = this.players.slice(0, DECK.length);
-    let announce = 'The players (' + this.players.length + '): <@' + this.players.join('>, <@');
+    let announce = 'The players (' + this.players.length + '): <@' + this.players.join('>, <@') + ">";
     this.client.sendMsg(this.channel, announce);
   }
 
@@ -129,7 +129,7 @@ class Game {
   delegateRoles() {
     shuffle(this.roleDeck);
     this.players.forEach(
-      (player, i) => this.origRoles[player] = this.roleDeck[i];
+      (player, i) => this.origRoles[player] = this.roleDeck[i]
     );
     this.roles = Object.assign({}, this.origRoles);
   }
@@ -255,7 +255,7 @@ class Game {
       let you = this.players.indexOf(player);
       let players = this.players.slice();
       players.splice(you, 1);
-      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
+      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
 
       this.timeLimit = setTimeout((function() {
         let target = 'center';
@@ -272,7 +272,7 @@ class Game {
       let you = this.players.indexOf(player);
       let players = this.players.slice();
       players.splice(you, 1);
-      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
+      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
 
       this.timeLimit = setTimeout((function() {
         let target = players[Math.floor(Math.random() * players.length)];
@@ -285,7 +285,7 @@ class Game {
       let you = this.players.indexOf(player);
       let players = this.players.slice();
       players.splice(you, 1);
-      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
+      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
 
       this.timeLimit = setTimeout((function() {
         let target1, target2;
@@ -323,7 +323,7 @@ class Game {
     }
 
     // check current turn
-    if (this.currentTurn.startsWith('Seer')) {
+    if (!this.currentTurn.startsWith('Seer')) {
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -361,7 +361,7 @@ class Game {
     }
 
     // check current turn
-    if (this.currentTurn.startsWith('Robber')) {
+    if (!this.currentTurn.startsWith('Robber')) {
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -389,7 +389,7 @@ class Game {
     }
 
     // check current turn
-    if (this.currentTurn.startsWith('Troublemaker')) {
+    if (!this.currentTurn.startsWith('Troublemaker')) {
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -419,7 +419,7 @@ class Game {
 
   lynchingVote(sender, target) {
     // check current turn
-    if (this.currentTurn.startsWith('Voting')) {
+    if (!this.currentTurn.startsWith('Voting')) {
       this.client.sendMsg(this.channel, "This is not the right time");
       return;
     }
@@ -432,8 +432,10 @@ class Game {
 
     if (this.votes.hasOwnProperty(sender)) {
       let vote = this.votes[sender];
-      let voter_idx = this.tally[vote].indexOf(sender);
-      this.tally[vote].splice(voter_idx, 1);
+      if (vote != target) {
+        let voter_idx = this.tally[vote].indexOf(sender);
+        this.tally[vote].splice(voter_idx, 1);
+      }
     }
 
     this.votes[sender] = target;
@@ -443,7 +445,7 @@ class Game {
     }
     this.tally[target].push(sender);
     this.client.sendMsg(this.channel, "<@" + sender + "> voted for <@" + target + ">"
-      + "the player has " + this.tally[target].length + " votes now");
+      + ", the player has " + this.tally[target].length + " vote(s) now");
   }
 
   forceEnd() {
