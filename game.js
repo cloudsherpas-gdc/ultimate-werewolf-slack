@@ -329,7 +329,7 @@ class Game {
       this.timeLimit = setTimeout((function() {
         let target = 'center';
         // Roll two-face dice
-        if (Math.random() < 0.5 ? false : true) {
+        if (players.length && Math.random() < 0.5 ? false : true) {
           target = '<@' + players[Math.floor(Math.random() * players.length)] + '>';
         }
         this.sendPMInGame(player, "*Time limit reached!* Randomly choosing an action...");
@@ -347,6 +347,10 @@ class Game {
       }
 
       this.timeLimit = setTimeout((function() {
+        if (!players.length) {
+          this.nextStep();
+          return;
+        }
         let target = '<@' + players[Math.floor(Math.random() * players.length)] + '>';
         this.sendPMInGame(player, "*Time limit reached!* Randomly choosing an action...");
         this.robberRob(player, target);
@@ -363,6 +367,10 @@ class Game {
       }
 
       this.timeLimit = setTimeout((function() {
+        if (!players.length) {
+          this.nextStep();
+          return;
+        }
         let target1, target2;
         do {
           target1 = '<@' + players[Math.floor(Math.random() * players.length)] + '>';
