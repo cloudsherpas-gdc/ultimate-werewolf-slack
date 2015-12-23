@@ -82,7 +82,7 @@ class Game {
         let members = data[entity].members;
         if (players.length) {
           let listedPlayers = players.map(p => p.substring(2, p.length - 1));
-          if (!listedPlayers.every( v => members.indexOf(v) > -1 )) {
+          if (!listedPlayers.every( v => members.indexOf(v) >= 0 )) {
             this.client.sendMsg(channel, "Not everyone is in the room. Please type `!w force-end` to force the game to end.");
             return;
           }
@@ -102,7 +102,7 @@ class Game {
     // get the players
     this.players = channelMembers.slice();
     let idx = this.players.indexOf(this.client.slackData.self.id);
-    if (idx > -1) this.players.splice(idx, 1);
+    if (idx >= 0) this.players.splice(idx, 1);
     // limit players to # of roles
     this.players = this.players.slice(0, ROLES.length);
     this.playerNames = this.players.slice().map(p => this.client.getUser(p).name);
@@ -151,7 +151,7 @@ class Game {
     this.currentTurn = role;
 
     // Role not included in the game
-    if (this.roles.indexOf(role) === -1)
+    if (this.roles.indexOf(role) < 0)
       return Promise.resolve();
 
     return this.asyncDelay(this.sendStartMessage, role)
@@ -300,7 +300,7 @@ class Game {
     // peek player card
     else {
       let targetName = target.slice(1);
-      if (!this.assignments.hasOwnProperty(targetName)) {
+      if (this.playerNames.indexOf(targetName) < 0) {
         this.sendPMInGame(sender, "There are no players with that username: " + targetName);
         return;
       }
@@ -327,7 +327,7 @@ class Game {
     }
 
     let targetName = target.slice(1);
-    if (!this.assignments.hasOwnProperty(targetName)) {
+    if (this.playerNames.indexOf(targetName) < 0) {
       this.sendPMInGame(sender, "There are no players with that username: " + targetName);
       return;
     }
@@ -359,12 +359,12 @@ class Game {
     }
 
     let targetName1 = target1.slice(1);
-    if (!this.assignments.hasOwnProperty(targetName1)) {
+    if (this.playerNames.indexOf(targetName1) < 0) {
       this.sendPMInGame(sender, "There are no players with that username: " + targetName1);
       return;
     }
     let targetName2 = target2.slice(1);
-    if (!this.assignments.hasOwnProperty(targetName2)) {
+    if (this.playerNames.indexOf(targetName2) < 0) {
       this.sendPMInGame(sender, "There are no players with that username: " + targetName2);
       return;
     }
@@ -383,6 +383,11 @@ class Game {
       return;
     }
     // TODO: implementation
+    let targetName = target.slice(1);
+    if (this.playerNames.indexOf(targetName) < 0) {
+      this.sendPMInGame(sender, "There are no players with that username: " + targetName);
+      return;
+    }
   }
 
   forceEnd() {
