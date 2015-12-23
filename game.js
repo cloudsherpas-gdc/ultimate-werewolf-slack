@@ -223,19 +223,28 @@ class Game {
 
     else if (player.role == 'Seer') {
       this.sendPMInGame(player.id, "`!w peek-" + this.gameID + " center` to peek at 2 center cards or `!w peek-" + this.gameID + " @username` to peek at a player's card");
-      this.sendPMInGame(player.id, "The players are: @" + this.playerNames.join(', @'));
+      let you = this.players.indexOf(player.id);
+      let names = this.playerNames.slice();
+      names.splice(you, 1);
+      this.sendPMInGame(player.id, "The players are: @" + names.join(', @'));
       // TODO: Add time limit
     }
 
     else if (player.role == 'Robber') {
       this.sendPMInGame(player.id, "`!w rob-" + this.gameID + " @username` to rob a player");
-      this.sendPMInGame(player.id, "The players are: @" + this.playerNames.join(', @'));
+      let you = this.players.indexOf(player.id);
+      let names = this.playerNames.slice();
+      names.splice(you, 1);
+      this.sendPMInGame(player.id, "The players are: @" + names.join(', @'));
       // TODO: Add time limit
     }
 
     else if (player.role == 'Troublemaker') {
       this.sendPMInGame(player.id, "`!w swap-" + this.gameID + " @userA @userB` to swap the players' cards");
-      this.sendPMInGame(player.id, "The players are: @" + this.playerNames.join(', @'));
+      let you = this.players.indexOf(player.id);
+      let names = this.playerNames.slice();
+      names.splice(you, 1);
+      this.sendPMInGame(player.id, "The players are: @" + names.join(', @'));
       // TODO: Add time limit
     }
 
