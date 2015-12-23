@@ -1,12 +1,12 @@
 {
   "name": "ultimate-werewolf-slack",
   "version": "1.0.0",
-  "description": "",
+  "description": "A bot that moderates Ultimate Werewolf games",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Ben Sarmiento <me@bensarmiento.com>",
   "license": "ISC",
   "dependencies": {
     "slackbotapi": "^1.3.7"
