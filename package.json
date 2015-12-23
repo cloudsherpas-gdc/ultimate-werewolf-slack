@@ -1,13 +1,23 @@
 {
   "name": "ultimate-werewolf-slack",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.2",
+  "description": "A bot that moderates Ultimate Werewolf games",
+  "keywords": ["ultimate", "werewolf", "slack", "bot"],
+  "homepage": "https://github.com/yowmamasita/ultimate-werewolf-slack",
   "main": "index.js",
+  "bugs": {
+    "url" : "https://github.com/yowmamasita/ultimate-werewolf-slack/issues",
+    "email" : "me@bensarmiento.com"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Ben Sarmiento <me@bensarmiento.com>",
   "license": "ISC",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/yowmamasita/ultimate-werewolf-slack.git"
+  },
   "dependencies": {
     "slackbotapi": "^1.3.7"
   }
