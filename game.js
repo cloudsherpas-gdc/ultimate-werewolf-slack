@@ -168,11 +168,17 @@ class Game {
   beginVoting() {
     this.currentTurn = 'Voting Phase';
     setTimeout((function() {
+      if (this.currentTurn == 'End') {
+        return;
+      }
       this.client.sendMsg(this.channel, "*Time's up!*");
       this.currentTurn = 'End';
       this.showResults(true);
     }).bind(this), VOTING_PHASE * 60 * 1000);
     REMINDERS.forEach(t => setTimeout((function() {
+        if (this.currentTurn == 'End') {
+          return;
+        }
         this.remindVoters(t);
       }).bind(this), t));
     return Promise.resolve();
@@ -326,6 +332,9 @@ class Game {
       }
 
       this.timeLimit = setTimeout((function() {
+        if (this.currentTurn == 'End') {
+          return;
+        }
         let target = 'center';
         // Roll two-face dice
         if (players.length && Math.random() < 0.5 ? false : true) {
@@ -346,8 +355,8 @@ class Game {
       }
 
       this.timeLimit = setTimeout((function() {
-        if (!players.length) {
-          this.nextStep();
+        if (!players.length || this.currentTurn == 'End') {
+          // this.nextStep();
           return;
         }
         let target = '<@' + players[Math.floor(Math.random() * players.length)] + '>';
@@ -366,8 +375,8 @@ class Game {
       }
 
       this.timeLimit = setTimeout((function() {
-        if (!players.length) {
-          this.nextStep();
+        if (!players.length || this.currentTurn == 'End') {
+          // this.nextStep();
           return;
         }
         let target1, target2;
@@ -406,7 +415,6 @@ class Game {
 
     // check current turn
     if (!this.currentTurn.startsWith('Seer')) {
-      console.log(this.currentTurn);
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -419,9 +427,6 @@ class Game {
         center_idx1 = Math.floor(Math.random() * 3) + this.players.length;
         center_idx2 = Math.floor(Math.random() * 3) + this.players.length;
       } while (center_idx1 == center_idx2);
-      console.log(this.roleDeck);
-      console.log(center_idx1);
-      console.log(center_idx2);
       this.sendPMInGame(sender, "Center peek: `" + this.roleDeck[center_idx1] + "`, `" + this.roleDeck[center_idx2] + "`");
     }
 
@@ -447,7 +452,6 @@ class Game {
 
     // check current turn
     if (!this.currentTurn.startsWith('Robber')) {
-      console.log(this.currentTurn);
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -475,7 +479,6 @@ class Game {
 
     // check current turn
     if (!this.currentTurn.startsWith('Troublemaker')) {
-      console.log(this.currentTurn);
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -543,6 +546,10 @@ class Game {
     let args = Array.prototype.slice.call(arguments, this.asyncDelay.length);
     return new Promise((function(resolve, reject) {
         setTimeout((function() {
+          if (this.currentTurn == 'End') {
+            // resolve();
+            return;
+          }
           fn.apply(this, args);
           resolve();
         }).bind(this), randomDelay());
