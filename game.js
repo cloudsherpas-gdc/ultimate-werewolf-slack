@@ -399,8 +399,7 @@ class Game {
 
   seerPeek(sender, target) {
     // role check
-    let seer = this.filterPlayersByOriginalRole('Seer');
-    if (!seer.length || (seer.length && seer[0] == sender)) {
+    if (this.origRoles[sender] != 'Seer') {
       this.sendPMInGame(sender, "Hey, you're not a Seer!");
       this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Seer!");
       return;
@@ -437,8 +436,7 @@ class Game {
 
   robberRob(sender, target) {
     // role check
-    let robber = this.filterPlayersByOriginalRole('Robber');
-    if (!robber.length || (robber.length && robber[0] == sender)) {
+    if (this.origRoles[sender] != 'Robber') {
       this.sendPMInGame(sender, "Hey, you're not a Robber!");
       this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Robber!");
       return;
@@ -465,8 +463,7 @@ class Game {
 
   troublemakerSwap(sender, target1, target2) {
     // role check
-    let troublemaker = this.filterPlayersByOriginalRole('Troublemaker');
-    if (!troublemaker.length || (troublemaker.length && troublemaker[0] == sender)) {
+    if (this.origRoles[sender] != 'Troublemaker') {
       this.sendPMInGame(sender, "Hey, you're not a Troublemaker!");
       this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Troublemaker!");
       return;
