@@ -330,8 +330,9 @@ class Game {
         let target = 'center';
         // Roll two-face dice
         if (Math.random() < 0.5 ? false : true) {
-          target = players[Math.floor(Math.random() * players.length)];
+          target = '<@' + players[Math.floor(Math.random() * players.length)] + '>';
         }
+        this.sendPMInGame(player, "*Time limit reached!* Randomly choosing an action...");
         this.seerPeek(player, target);
       }).bind(this), TIME_LIMIT);
     }
@@ -346,7 +347,8 @@ class Game {
       }
 
       this.timeLimit = setTimeout((function() {
-        let target = players[Math.floor(Math.random() * players.length)];
+        let target = '<@' + players[Math.floor(Math.random() * players.length)] + '>';
+        this.sendPMInGame(player, "*Time limit reached!* Randomly choosing an action...");
         this.robberRob(player, target);
       }).bind(this), TIME_LIMIT);
     }
@@ -363,9 +365,10 @@ class Game {
       this.timeLimit = setTimeout((function() {
         let target1, target2;
         do {
-          target1 = players[Math.floor(Math.random() * players.length)];
-          target2 = players[Math.floor(Math.random() * players.length)];
+          target1 = '<@' + players[Math.floor(Math.random() * players.length)] + '>';
+          target2 = '<@' + players[Math.floor(Math.random() * players.length)] + '>';
         } while (target1 == target2);
+        this.sendPMInGame(player, "*Time limit reached!* Randomly choosing an action...");
         this.troublemakerSwap(player, target1, target2);
       }).bind(this), TIME_LIMIT);
     }
