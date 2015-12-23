@@ -287,7 +287,7 @@ class Game {
       this.client.sendPM(recipient, "[`" + this.gameID + "`|<#" + this.channel +">] " + message);
     }
     else {
-      this.client.sendPM(recipient, "[`" + this.gameID + "`|private-channel] " + message);
+      this.client.sendPM(recipient, "[`" + this.gameID + "`] " + message);
     }
   }
 
