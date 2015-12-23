@@ -1,5 +1,8 @@
 'use strict';
 
+const VOTING_PHASE = 5; // minutes
+const REMINDERS = [60000, 120000, 180000, 240000, 270000];
+
 const DECK = [
   'Werewolf',
   'Werewolf',
@@ -17,7 +20,7 @@ const DECK = [
 const MESSAGES = {
   'Game': {
     start: "*Everyone, close your eyes.*",
-    end: "*Wake up!* Voting ends in 5 minutes...",
+    end: "*Wake up!* Voting ends in " + VOTING_PHASE + " minutes...",
   },
   'Werewolf': {
     start: "`Werewolves`, wake up and look for other werewolves.",
@@ -162,8 +165,15 @@ class Game {
     setTimeout((function() {
       this.currentTurn = 'End';
       this.showResults();
-    }).bind(this), 300000);
+    }).bind(this), VOTING_PHASE * 60 * 1000);
+    REMINDERS.forEach(t => setTimeout((function() {
+        this.remindVoters();
+      }).bind(this), t));
     return Promise.resolve();
+  }
+
+  remindVoters() {
+    // TODO: Show partial game results
   }
 
   showResults() {
@@ -407,18 +417,20 @@ class Game {
       this.client.sendMsg(this.channel, "This is not the right time");
       return;
     }
-    // TODO: implementation
+
     target = target.substring(2, target.length - 1);
     if (this.players.indexOf(target) < 0) {
       this.client.sendMsg(this.channel, "There are no players with that username: <@" + target + ">");
       return;
     }
 
-    // FIXME: Let's use names instead
+    // TODO: Check if player has already voted
+
     if (!this.votes.hasOwnProperty(target)) {
       this.votes[target] = [];
     }
     this.votes[target].push(sender);
+    this.client.sendMsg(this.channel, "<@" + sender + "> voted for <@" + target + ">, the player has X votes now");
   }
 
   forceEnd() {
