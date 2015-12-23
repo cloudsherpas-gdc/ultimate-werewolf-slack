@@ -1,6 +1,6 @@
 'use strict';
 
-const ROLES = [
+const DECK = [
   'Werewolf',
   'Werewolf',
   'Minion',
@@ -55,11 +55,13 @@ class Game {
     this.gameID = Math.random().toString(36).substr(2, 5);
     this.client = slackClient;
     this.channel = channel;
+    this.currentTurn = 'Beginning';
     this.players = [];
     this.roleDeck = [];
-    this.origAssignments = {};
-    this.assignments = {};
-    this.currentTurn = 'Beginning';
+    this.origRoles = {};
+    this.roles = {};
+    this.nextStep = Promise.resolve;
+    this.timeLimit = null;
     this.votes = {};
 
     // announce GameID
@@ -103,14 +105,14 @@ class Game {
     let idx = this.players.indexOf(this.client.slackData.self.id);
     if (idx >= 0) this.players.splice(idx, 1);
     // limit players to # of roles
-    this.players = this.players.slice(0, ROLES.length);
+    this.players = this.players.slice(0, DECK.length);
     let announce = 'The players (' + this.players.length + '): <@' + this.players.join('>, <@');
     this.client.sendMsg(this.channel, announce);
   }
 
   announceRoles() {
     // announce roles to all players
-    this.roleDeck = ROLES.slice(0, this.players.length + 3);
+    this.roleDeck = DECK.slice(0, this.players.length + 3);
     let announce = 'The roles: `' + this.roleDeck.join('`, `') + '`';
     this.client.sendMsg(this.channel, announce);
   }
@@ -118,16 +120,16 @@ class Game {
   delegateRoles() {
     shuffle(this.roleDeck);
     this.players.forEach(
-      (n, i) => this.origAssignments[n] = this.roleDeck[i];
+      (player, i) => this.origRoles[player] = this.roleDeck[i];
     );
-    this.assignments = Object.assign({}, this.origAssignments);
+    this.roles = Object.assign({}, this.origRoles);
   }
 
   announcePlayerRole() {
     // send out the roles via PM
-    Object.keys(this.origAssignments).forEach(
+    Object.keys(this.origRoles).forEach(
       player => this.client.sendPM(player,
-        "[`" + this.gameID + "`] Your role is `" + this.origAssignments[player] + "`!"));
+        "[`" + this.gameID + "`] Your role is `" + this.origRoles[player] + "`!"));
   }
 
   startNight() {
@@ -144,7 +146,7 @@ class Game {
   }
 
   wakeUp(role) {
-    this.currentTurn = role;
+    this.currentTurn = role + "'s turn";
 
     // Role not included in the game
     if (this.roleDeck.indexOf(role) < 0)
@@ -156,9 +158,9 @@ class Game {
   }
 
   beginVoting() {
-    this.currentTurn = 'Voting';
+    this.currentTurn = 'Voting Phase';
     setTimeout((function() {
-      this.currentTurn = 'Complete';
+      this.currentTurn = 'End';
       this.showResults();
     }).bind(this), 300000);
     return Promise.resolve();
@@ -184,7 +186,7 @@ class Game {
           playersThisTurn.forEach(
             (function(player) {
               this.sendPMInGame(player, "Your turn...");
-              this.executePlayerTurn(player, this.origAssignments[player]);
+              this.executePlayerTurn(player, this.origRoles[player]);
             }).bind(this));
         }
         else {
@@ -196,14 +198,14 @@ class Game {
   }
 
   filterPlayersByOriginalRole(role) {
-    return Object.keys(this.origAssignments).filter(
-        player => role === this.origAssignments[player]
+    return Object.keys(this.origRoles).filter(
+        player => role === this.origRoles[player]
       );
   }
 
   filterPlayersByRole(role) {
-    return Object.keys(this.assignments).filter(
-        player => role === this.assignments[player]
+    return Object.keys(this.roles).filter(
+        player => role === this.roles[player]
       );
   }
 
@@ -216,7 +218,7 @@ class Game {
       let werewolves = this.filterPlayersByRole('Werewolf');
       if (werewolves.length > 1) {
         // give a list of werewolves
-        this.sendPMInGame(player, "Werewolves: " + werewolves.join(' & '));
+        this.sendPMInGame(player, "Werewolves: <@" + werewolves.join('> & <@') + ">");
       }
       else {
         // peek at center
@@ -238,7 +240,15 @@ class Game {
       let players = this.players.slice();
       players.splice(you, 1);
       this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
-      // TODO: Add time limit
+
+      this.timeLimit = setTimeout((function() {
+        let target = 'center';
+        // Roll two-face dice
+        if (Math.random() < 0.5 ? false : true) {
+          target = players[Math.floor(Math.random() * players.length)];
+        }
+        this.seerPeek(player, target);
+      }).bind(this), 10000);
     }
 
     else if (role == 'Robber') {
@@ -247,7 +257,11 @@ class Game {
       let players = this.players.slice();
       players.splice(you, 1);
       this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
-      // TODO: Add time limit
+
+      this.timeLimit = setTimeout((function() {
+        let target = players[Math.floor(Math.random() * players.length)];
+        this.robberRob(player, target);
+      }).bind(this), 10000);
     }
 
     else if (role == 'Troublemaker') {
@@ -256,18 +270,29 @@ class Game {
       let players = this.players.slice();
       players.splice(you, 1);
       this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
-      // TODO: Add time limit
+
+      this.timeLimit = setTimeout((function() {
+        let target1, target2;
+        do {
+          target1 = players[Math.floor(Math.random() * players.length)];
+          target2 = players[Math.floor(Math.random() * players.length)];
+        } while (target1 == target2);
+        this.troublemakerSwap(player, target1, target2);
+      }).bind(this), 10000);
     }
 
     else if (role == 'Drunk') {
-      // TODO: Implementation
-      this.sendPMInGame(player, "Your card's swapped to center");
+      let center_idx = Math.floor(Math.random() * 3) + this.players.length;
+      let newRole = this.roleDeck[center_idx];
+      let oldRole = this.roles[player];
+      this.roleDeck[center_idx] = oldRole;
+      this.roles[player] = newRole;
+      this.sendPMInGame(player, "Your card has been swapped to the center");
       this.nextStep();
     }
 
     else if (role == 'Insomniac') {
-      // TODO: Implementation
-      this.sendPMInGame(player, "Your card is...");
+      this.sendPMInGame(player, "Your card is...`" + this.roles[player] + "`");
       this.nextStep();
     }
   }
@@ -282,7 +307,7 @@ class Game {
     }
 
     // check current turn
-    if (this.currentTurn != 'Seer') {
+    if (this.currentTurn.startsWith('Seer')) {
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -305,7 +330,7 @@ class Game {
         this.sendPMInGame(sender, "There are no players with that username: <@" + target + ">");
         return;
       }
-      this.sendPMInGame(sender, "<@" + target + ">'s role is `" + this.assignments[target] + "`");
+      this.sendPMInGame(sender, "<@" + target + ">'s role is `" + this.roles[target] + "`");
     }
     this.nextStep();
   }
@@ -320,7 +345,7 @@ class Game {
     }
 
     // check current turn
-    if (this.currentTurn != 'Robber') {
+    if (this.currentTurn.startsWith('Robber')) {
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -330,13 +355,11 @@ class Game {
       this.sendPMInGame(sender, "There are no players with that username: <@" + target + ">");
       return;
     }
-    let oldRole = this.assignments[sender];
-    // FIXME
-    let newRole = this.assignments[target];
-    this.assignments[sender] = newRole;
-    // FIXME
-    this.assignments[target] = oldRole;
-    this.sendPMInGame(sender, "Your new role is `" + newRole + "`");
+    let oldRole = this.roles[sender];
+    let newRole = this.roles[target];
+    this.roles[sender] = newRole;
+    this.roles[target] = oldRole;
+    this.sendPMInGame(sender, "Your new role is `" + this.roles[sender] + "`");
     this.nextStep();
   }
 
@@ -350,8 +373,13 @@ class Game {
     }
 
     // check current turn
-    if (this.currentTurn != 'Troublemaker') {
+    if (this.currentTurn.startsWith('Troublemaker')) {
       this.sendPMInGame(sender, "This is not the right time");
+      return;
+    }
+
+    if (target1 == target2) {
+      this.sendPMInGame(sender, "You can't swap this player's card with his own");
       return;
     }
 
@@ -365,18 +393,17 @@ class Game {
       this.sendPMInGame(sender, "There are no players with that username: <@" + target2 + ">");
       return;
     }
-    // FIXME
-    let role1 = this.assignments[target1];
-    let role2 = this.assignments[target2];
-    this.assignments[target1] = role2;
-    this.assignments[target2] = role1;
+    let role1 = this.roles[target1];
+    let role2 = this.roles[target2];
+    this.roles[target1] = role2;
+    this.roles[target2] = role1;
     this.sendPMInGame(sender, "You swapped their cards");
     this.nextStep();
   }
 
   lynchingVote(sender, target) {
     // check current turn
-    if (this.currentTurn != 'Voting') {
+    if (this.currentTurn.startsWith('Voting')) {
       this.client.sendMsg(this.channel, "This is not the right time");
       return;
     }
@@ -396,7 +423,7 @@ class Game {
 
   forceEnd() {
     this.client.sendMsg(this.channel, "_Game was forced to end_");
-    this.currentTurn = 'Complete';
+    this.currentTurn = 'End';
   }
 
   asyncDelay(fn) {

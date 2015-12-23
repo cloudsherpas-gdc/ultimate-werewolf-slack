@@ -26,7 +26,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "You can't do this through PM");
         return;
       }
-      if (games.hasOwnProperty(channel) && games[channel].currentTurn != 'Complete') {
+      if (games.hasOwnProperty(channel) && games[channel].currentTurn != 'End') {
         slack.sendMsg(channel, "A game is already in progress...");
         return;
       }
