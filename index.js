@@ -45,6 +45,7 @@ slack.on('message', function (message) {
         return;
       }
       channel = registry[gameID];
+      clearTimeout(games[channel].timeLimit);
       games[channel].seerPeek(message.user, args[0]);
     }
 
@@ -59,6 +60,7 @@ slack.on('message', function (message) {
         return;
       }
       channel = registry[gameID];
+      clearTimeout(games[channel].timeLimit);
       games[channel].robberRob(message.user, args[0]);
     }
 
@@ -73,6 +75,7 @@ slack.on('message', function (message) {
         return;
       }
       channel = registry[gameID];
+      clearTimeout(games[channel].timeLimit);
       games[channel].troublemakerSwap(message.user, args[0], args[1]);
     }
 

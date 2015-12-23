@@ -1,5 +1,6 @@
 'use strict';
 
+const TIME_LIMIT = 10000;
 const VOTING_PHASE = 5; // minutes
 const REMINDERS = [60000, 120000, 180000, 240000, 270000];
 
@@ -52,6 +53,10 @@ const MESSAGES = {
   },
 };
 
+function randomDelay() {
+  return ((Math.random() * 2.5) + 5) * 1000;
+}
+
 class Game {
 
   constructor(slackClient, channel, players) {
@@ -66,6 +71,7 @@ class Game {
     this.nextStep = Promise.resolve;
     this.timeLimit = null;
     this.votes = {};
+    this.tally = {};
 
     // announce GameID
     let announce = "A new game of *Ultimate Werewolf*, GameID `" + this.gameID + "`";
@@ -202,7 +208,7 @@ class Game {
         else {
           setTimeout((function() {
             this.nextStep();
-          }).bind(this), ((Math.random() * 2.5) + 5) * 1000);
+          }).bind(this), randomDelay());
         }
       }).bind(this));
   }
@@ -258,7 +264,7 @@ class Game {
           target = players[Math.floor(Math.random() * players.length)];
         }
         this.seerPeek(player, target);
-      }).bind(this), 10000);
+      }).bind(this), TIME_LIMIT);
     }
 
     else if (role == 'Robber') {
@@ -271,7 +277,7 @@ class Game {
       this.timeLimit = setTimeout((function() {
         let target = players[Math.floor(Math.random() * players.length)];
         this.robberRob(player, target);
-      }).bind(this), 10000);
+      }).bind(this), TIME_LIMIT);
     }
 
     else if (role == 'Troublemaker') {
@@ -288,7 +294,7 @@ class Game {
           target2 = players[Math.floor(Math.random() * players.length)];
         } while (target1 == target2);
         this.troublemakerSwap(player, target1, target2);
-      }).bind(this), 10000);
+      }).bind(this), TIME_LIMIT);
     }
 
     else if (role == 'Drunk') {
@@ -424,13 +430,20 @@ class Game {
       return;
     }
 
-    // TODO: Check if player has already voted
-
-    if (!this.votes.hasOwnProperty(target)) {
-      this.votes[target] = [];
+    if (this.votes.hasOwnProperty(sender)) {
+      let vote = this.votes[sender];
+      let voter_idx = this.tally[vote].indexOf(sender);
+      this.tally[vote].splice(voter_idx, 1);
     }
-    this.votes[target].push(sender);
-    this.client.sendMsg(this.channel, "<@" + sender + "> voted for <@" + target + ">, the player has X votes now");
+
+    this.votes[sender] = target;
+
+    if (!this.tally.hasOwnProperty(target)) {
+      this.tally[target] = [];
+    }
+    this.tally[target].push(sender);
+    this.client.sendMsg(this.channel, "<@" + sender + "> voted for <@" + target + ">"
+      + "the player has " + this.tally[target].length + " votes now");
   }
 
   forceEnd() {
@@ -444,7 +457,7 @@ class Game {
         setTimeout((function() {
           fn.apply(this, args);
           resolve();
-        }).bind(this), ((Math.random() * 2.5) + 5) * 1000);
+        }).bind(this), randomDelay());
       }).bind(this));
   }
 
