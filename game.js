@@ -1,6 +1,6 @@
 'use strict';
 
-const TIME_LIMIT = 10000;
+const TIME_LIMIT = 15000;
 const VOTING_PHASE = 5; // minutes
 const REMINDERS = [60000, 120000, 180000, 240000, 270000];
 
@@ -21,7 +21,7 @@ const DECK = [
 const MESSAGES = {
   'Game': {
     start: "*Everyone, close your eyes.*",
-    end: "*Wake up!* Voting ends in " + VOTING_PHASE + " minutes...",
+    end: "*Wake up!* Voting ends in " + VOTING_PHASE + " minutes. Type `!w vote @username` to vote.",
   },
   'Werewolf': {
     start: "`Werewolves`, wake up and look for other werewolves.",
@@ -137,8 +137,7 @@ class Game {
   announcePlayerRole() {
     // send out the roles via PM
     Object.keys(this.origRoles).forEach(
-      player => this.client.sendPM(player,
-        "[`" + this.gameID + "`] Your role is `" + this.origRoles[player] + "`!"));
+      player => this.sendPMInGame(player, "Your role is `" + this.origRoles[player] + "`!"));
   }
 
   startNight() {
@@ -169,6 +168,7 @@ class Game {
   beginVoting() {
     this.currentTurn = 'Voting Phase';
     setTimeout((function() {
+      this.client.sendMsg(this.channel, "*Time's up!*");
       this.currentTurn = 'End';
       this.showResults(true);
     }).bind(this), VOTING_PHASE * 60 * 1000);
@@ -179,47 +179,55 @@ class Game {
   }
 
   remindVoters(elapsedTime) {
-    this.client.sendMsg(this.channel, "Remaining time to vote: `" + (elapsedTime / 60000) + " minutes`");
+    this.client.sendMsg(this.channel, "Remaining time to vote: `" + (VOTING_PHASE - (elapsedTime / 60000)) + " minutes`");
     this.showResults(false);
   }
 
   showResults(showWinner) {
     let nonVoters = this.players.filter(player => Object.keys(this.votes).indexOf(player) < 0);
-    let toBeLynched = Object.keys(this.tally).reduce((function(previousPlayer, currentPlayer) {
-          return this.clincher(previousPlayer, currentPlayer);
-        }).bind(this));
+    let votedPlayers = Object.keys(this.tally);
 
-    // Do not show anything
-    if (!toBeLynched) {
+    // Do not show anything if no votes have been received
+    if (!votedPlayers.length) {
       this.client.sendMsg(this.channel, "No votes received yet...");
       if (showWinner) this.client.sendMsg(this.channel, "*You are all losers!*");
       return;
     }
 
+    let toBeLynched = votedPlayers.reduce((function(previousPlayer, currentPlayer) {
+          return this.clincher(previousPlayer, currentPlayer);
+        }).bind(this));
+
     // Show tally
-    this.client.sendMsg(this.channel, "Player with the most number of votes (" + this.tally[toBeLynched].length + "): <@" + toBeLynched + ">");
+    this.client.sendMsg(this.channel, "Player with the most number of votes: <@" + toBeLynched + "> (" + this.tally[toBeLynched].length + ")");
     let tallyText = [];
-    for (var player of Object.keys(this.tally)) {
+    for (var player of votedPlayers) {
       if (player == toBeLynched) continue;
       tallyText.push("<@" + player + "> has " + this.tally[player].length + " votes");
     }
-    this.client.sendMsg(this.channel, "Other players: " + tallyText.join(', '));
+    if (tallyText.length) {
+      this.client.sendMsg(this.channel, "Other players: " + tallyText.join(', '));
+    }
 
     if (!showWinner) {
-      this.client.sendMsg(this.channel, "_These players have not voted yet:_ <@" + nonVoters.join('>, <@') + ">");
+      if (nonVoters.length) {
+        this.client.sendMsg(this.channel, "_These players have not voted yet:_ <@" + nonVoters.join('>, <@') + ">");
+      }
     }
     else {
       this.client.sendMsg(this.channel, "<@" + toBeLynched + "> is a... `" + this.roles[toBeLynched] + "`!");
-      if (['Werewolf', 'Minion'].indexOf(this.roles[toBeLynched]) >= 0) {
-        this.winner = "Werewolf Team";
-        this.winningPlayers = Object.keys(this.roles).filter(player => ['Werewolf', 'Minion'].indexOf(this.roles[player]) >= 0);
-      }
-      else {
+      if (this.roles[toBeLynched] == 'Werewolf') {
         this.winner = "Village Team";
         this.winningPlayers = Object.keys(this.roles).filter(player => ['Werewolf', 'Minion'].indexOf(this.roles[player]) < 0);
       }
+      else {
+        this.winner = "Werewolf Team";
+        this.winningPlayers = Object.keys(this.roles).filter(player => ['Werewolf', 'Minion'].indexOf(this.roles[player]) >= 0);
+      }
       this.client.sendMsg(this.channel, "Winner: *" + this.winner + "* <@" + this.winningPlayers.join('>, <@') + ">");
-      this.client.sendMsg(this.channel, "_These players did not vote:_ <@" + nonVoters.join('>, <@') + ">");
+      if (nonVoters.length) {
+        this.client.sendMsg(this.channel, "_These players did not vote:_ <@" + nonVoters.join('>, <@') + ">");
+      }
     }
   }
 
@@ -275,7 +283,12 @@ class Game {
   }
 
   sendPMInGame(recipient, message) {
-    this.client.sendPM(recipient, "[`" + this.gameID + "`] " + message);
+    if (this.channel.startsWith('C')) {
+      this.client.sendPM(recipient, "[`" + this.gameID + "`|<#" + this.channel +">] " + message);
+    }
+    else {
+      this.client.sendPM(recipient, "[`" + this.gameID + "`|private-channel] " + message);
+    }
   }
 
   executePlayerTurn(player, role) {
@@ -295,7 +308,12 @@ class Game {
 
     else if (role == 'Minion') {
       let werewolves = this.filterPlayersByRole('Werewolf');
-      this.sendPMInGame(player, "Werewolves: " + werewolves.join(' & '));
+      if (werewolves.length) {
+        this.sendPMInGame(player, "Werewolves: " + werewolves.join(' & '));
+      }
+      else {
+        this.sendPMInGame(player, "Werewolves: _None_, survive on your own!");
+      }
       this.nextStep();
     }
 
@@ -304,7 +322,9 @@ class Game {
       let you = this.players.indexOf(player);
       let players = this.players.slice();
       players.splice(you, 1);
-      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
+      if (players.length) {
+        this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
+      }
 
       this.timeLimit = setTimeout((function() {
         let target = 'center';
@@ -321,7 +341,9 @@ class Game {
       let you = this.players.indexOf(player);
       let players = this.players.slice();
       players.splice(you, 1);
-      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
+      if (players.length) {
+        this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
+      }
 
       this.timeLimit = setTimeout((function() {
         let target = players[Math.floor(Math.random() * players.length)];
@@ -334,7 +356,9 @@ class Game {
       let you = this.players.indexOf(player);
       let players = this.players.slice();
       players.splice(you, 1);
-      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
+      if (players.length) {
+        this.sendPMInGame(player, "The players are: <@" + players.join('>, <@') + ">");
+      }
 
       this.timeLimit = setTimeout((function() {
         let target1, target2;
