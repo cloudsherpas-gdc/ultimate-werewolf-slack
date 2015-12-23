@@ -103,6 +103,7 @@ slack.on('message', function (message) {
     else if (command == 'help') {
       var helpMessage = ""
         + "• Anyone can chat `!w start` in a channel to start a new game. There can only be one game in-progress per channel.\n"
+        + "• You can also specify players by chatting `!w start @user1 @user2 ...`, up to 8 players in total\n"
         + "• A Seer can PM the <@" + slack.slackData.self.id + "> `!w peek-gameid center` to peek at 2 random center cards or `!w peek @user` to peek at a player's card\n"
         + "• A Robber can PM the <@" + slack.slackData.self.id + "> `!w rob-gameid @user` to rob a user\n"
         + "• A Troublemaker can PM the <@" + slack.slackData.self.id + "> `!w swap-gameid @user1 @user2` to swap @user1 and @user2's cards\n"
