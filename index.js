@@ -39,7 +39,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "You just can't peek at cards blatantly");
         return;
       }
-      let gameID = command.split('-')[1];
+      var gameID = command.split('-')[1];
       if (!registry.hasOwnProperty(gameID)) {
         slack.sendMsg(channel, "Can't find a game to do this action...");
         return;
@@ -53,7 +53,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
-      let gameID = command.split('-')[1];
+      var gameID = command.split('-')[1];
       if (!registry.hasOwnProperty(gameID)) {
         slack.sendMsg(channel, "Can't find a game to do this action...");
         return;
@@ -67,7 +67,7 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
-      let gameID = command.split('-')[1];
+      var gameID = command.split('-')[1];
       if (!registry.hasOwnProperty(gameID)) {
         slack.sendMsg(channel, "Can't find a game to do this action...");
         return;
@@ -102,3 +102,23 @@ slack.on('message', function (message) {
     }
   }
 });
+
+// polyfill: getGroup()
+
+slackAPI.prototype.getGroup = function (term) {
+    var group = null,
+        self = this;
+    for (var i in self.slackData.groups) {
+        if (self.slackData.groups[i].name === term) {
+            group = self.slackData.groups[i];
+        }
+    }
+    if (group === null) {
+        for (var i_ in self.slackData.groups) {
+            if (self.slackData.groups[i_].id === term) {
+                group = self.slackData.groups[i_];
+            }
+        }
+    }
+    return group;
+};

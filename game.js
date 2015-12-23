@@ -52,16 +52,15 @@ const MESSAGES = {
 class Game {
 
   constructor(slackClient, channel, players) {
+    this.gameID = Math.random().toString(36).substr(2, 5);
     this.client = slackClient;
     this.channel = channel;
     this.players = [];
-    this.playerNames = [];
-    this.roles = [];
+    this.roleDeck = [];
     this.origAssignments = {};
     this.assignments = {};
-    this.gameID = Math.random().toString(36).substr(2, 5);
-    // TODO: Add tracking and checking for current turns and corresponding actions
     this.currentTurn = 'Beginning';
+    this.votes = {};
 
     // announce GameID
     let announce = "A new game of *Ultimate Werewolf*, GameID `" + this.gameID + "`";
@@ -98,29 +97,28 @@ class Game {
   }
 
   getPlayers(channelMembers) {
-    console.log(channelMembers);
     // get the players
     this.players = channelMembers.slice();
+    // remove @werewolf-mod
     let idx = this.players.indexOf(this.client.slackData.self.id);
     if (idx >= 0) this.players.splice(idx, 1);
     // limit players to # of roles
     this.players = this.players.slice(0, ROLES.length);
-    this.playerNames = this.players.slice().map(p => this.client.getUser(p).name);
-    let announce = 'The players (' + this.players.length + '): @' + this.playerNames.join(', @');
+    let announce = 'The players (' + this.players.length + '): <@' + this.players.join('>, <@');
     this.client.sendMsg(this.channel, announce);
   }
 
   announceRoles() {
     // announce roles to all players
-    this.roles = ROLES.slice(0, this.players.length + 3);
-    let announce = 'The roles: `' + this.roles.join('`, `') + '`';
+    this.roleDeck = ROLES.slice(0, this.players.length + 3);
+    let announce = 'The roles: `' + this.roleDeck.join('`, `') + '`';
     this.client.sendMsg(this.channel, announce);
   }
 
   delegateRoles() {
-    shuffle(this.roles);
-    this.playerNames.forEach(
-      (n, i) => this.origAssignments[n] = {id: this.players[i], role: this.roles[i]}
+    shuffle(this.roleDeck);
+    this.players.forEach(
+      (n, i) => this.origAssignments[n] = this.roleDeck[i];
     );
     this.assignments = Object.assign({}, this.origAssignments);
   }
@@ -128,11 +126,8 @@ class Game {
   announcePlayerRole() {
     // send out the roles via PM
     Object.keys(this.origAssignments).forEach(
-        k => this.client.sendPM(
-                this.origAssignments[k].id,
-                "[`" + this.gameID + "`] Your role is `" + this.origAssignments[k].role + "`!"
-              )
-      );
+      player => this.client.sendPM(player,
+        "[`" + this.gameID + "`] Your role is `" + this.origAssignments[player] + "`!"));
   }
 
   startNight() {
@@ -144,14 +139,15 @@ class Game {
             .then((function(){return this.wakeUp('Troublemaker');}).bind(this))
             .then((function(){return this.wakeUp('Drunk');}).bind(this))
             .then((function(){return this.wakeUp('Insomniac');}).bind(this))
-            .then((function(){return this.asyncDelay(this.sendEndMessage, 'Game');}).bind(this));
+            .then((function(){return this.asyncDelay(this.sendEndMessage, 'Game');}).bind(this))
+            .then((function(){return this.beginVoting();}).bind(this))
   }
 
   wakeUp(role) {
     this.currentTurn = role;
 
     // Role not included in the game
-    if (this.roles.indexOf(role) < 0)
+    if (this.roleDeck.indexOf(role) < 0)
       return Promise.resolve();
 
     return this.asyncDelay(this.sendStartMessage, role)
@@ -161,8 +157,15 @@ class Game {
 
   beginVoting() {
     this.currentTurn = 'Voting';
-    // TODO: Implement 5 minute time limit
+    setTimeout((function() {
+      this.currentTurn = 'Complete';
+      this.showResults();
+    }).bind(this), 300000);
     return Promise.resolve();
+  }
+
+  showResults() {
+    // TODO: Show end game results
   }
 
   sendStartMessage(role) {
@@ -179,9 +182,9 @@ class Game {
         let playersThisTurn = this.filterPlayersByRole(role);
         if (playersThisTurn.length) {
           playersThisTurn.forEach(
-            (function(k) {
-              this.sendPMInGame(this.origAssignments[k].id, "Your turn...");
-              this.executePlayerTurn(this.origAssignments[k]);
+            (function(player) {
+              this.sendPMInGame(player, "Your turn...");
+              this.executePlayerTurn(player, this.origAssignments[player]);
             }).bind(this));
         }
         else {
@@ -194,13 +197,13 @@ class Game {
 
   filterPlayersByOriginalRole(role) {
     return Object.keys(this.origAssignments).filter(
-        k => role === this.origAssignments[k].role
+        player => role === this.origAssignments[player]
       );
   }
 
   filterPlayersByRole(role) {
     return Object.keys(this.assignments).filter(
-        k => role === this.assignments[k].role
+        player => role === this.assignments[player]
       );
   }
 
@@ -208,63 +211,63 @@ class Game {
     this.client.sendPM(recipient, "[`" + this.gameID + "`] " + message);
   }
 
-  executePlayerTurn(player) {
-    if (player.role == 'Werewolf') {
+  executePlayerTurn(player, role) {
+    if (role == 'Werewolf') {
       let werewolves = this.filterPlayersByRole('Werewolf');
       if (werewolves.length > 1) {
         // give a list of werewolves
-        this.sendPMInGame(player.id, "Werewolves: " + werewolves.join(' & '));
+        this.sendPMInGame(player, "Werewolves: " + werewolves.join(' & '));
       }
       else {
         // peek at center
         let center_idx = Math.floor(Math.random() * 3) + this.players.length;
-        this.sendPMInGame(player.id, "You are the only werewolf, center peek: `" + this.roles[center_idx] + "`");
+        this.sendPMInGame(player, "You are the only werewolf, center peek: `" + this.roleDeck[center_idx] + "`");
       }
       this.nextStep();
     }
 
-    else if (player.role == 'Minion') {
+    else if (role == 'Minion') {
       let werewolves = this.filterPlayersByRole('Werewolf');
-      this.sendPMInGame(player.id, "Werewolves: " + werewolves.join(' & '));
+      this.sendPMInGame(player, "Werewolves: " + werewolves.join(' & '));
       this.nextStep();
     }
 
-    else if (player.role == 'Seer') {
-      this.sendPMInGame(player.id, "`!w peek-" + this.gameID + " center` to peek at 2 center cards or `!w peek-" + this.gameID + " @username` to peek at a player's card");
-      let you = this.players.indexOf(player.id);
-      let names = this.playerNames.slice();
-      names.splice(you, 1);
-      this.sendPMInGame(player.id, "The players are: @" + names.join(', @'));
+    else if (role == 'Seer') {
+      this.sendPMInGame(player, "`!w peek-" + this.gameID + " center` to peek at 2 center cards or `!w peek-" + this.gameID + " @username` to peek at a player's card");
+      let you = this.players.indexOf(player);
+      let players = this.players.slice();
+      players.splice(you, 1);
+      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
       // TODO: Add time limit
     }
 
-    else if (player.role == 'Robber') {
-      this.sendPMInGame(player.id, "`!w rob-" + this.gameID + " @username` to rob a player");
-      let you = this.players.indexOf(player.id);
-      let names = this.playerNames.slice();
-      names.splice(you, 1);
-      this.sendPMInGame(player.id, "The players are: @" + names.join(', @'));
+    else if (role == 'Robber') {
+      this.sendPMInGame(player, "`!w rob-" + this.gameID + " @username` to rob a player");
+      let you = this.players.indexOf(player);
+      let players = this.players.slice();
+      players.splice(you, 1);
+      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
       // TODO: Add time limit
     }
 
-    else if (player.role == 'Troublemaker') {
-      this.sendPMInGame(player.id, "`!w swap-" + this.gameID + " @userA @userB` to swap the players' cards");
-      let you = this.players.indexOf(player.id);
-      let names = this.playerNames.slice();
-      names.splice(you, 1);
-      this.sendPMInGame(player.id, "The players are: @" + names.join(', @'));
+    else if (role == 'Troublemaker') {
+      this.sendPMInGame(player, "`!w swap-" + this.gameID + " @userA @userB` to swap the players' cards");
+      let you = this.players.indexOf(player);
+      let players = this.players.slice();
+      players.splice(you, 1);
+      this.sendPMInGame(player, "The players are: <@" + players.join('>, <@'));
       // TODO: Add time limit
     }
 
-    else if (player.role == 'Drunk') {
+    else if (role == 'Drunk') {
       // TODO: Implementation
-      this.sendPMInGame(player.id, "Your card's swapped to center");
+      this.sendPMInGame(player, "Your card's swapped to center");
       this.nextStep();
     }
 
-    else if (player.role == 'Insomniac') {
+    else if (role == 'Insomniac') {
       // TODO: Implementation
-      this.sendPMInGame(player.id, "Your card is...");
+      this.sendPMInGame(player, "Your card is...");
       this.nextStep();
     }
   }
@@ -273,10 +276,8 @@ class Game {
     // role check
     let seer = this.filterPlayersByOriginalRole('Seer');
     if (!seer.length) {
-      this.sendPMInGame(sender, "But you're not a Seer!");
-      let senderIdx = this.players.indexOf(sender);
-      let announce = this.playerNames[senderIdx] + " is trying to be a Seer!";
-      this.client.sendMsg(this.channel, announce);
+      this.sendPMInGame(sender, "Hey, you're not a Seer!");
+      this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Seer!");
       return;
     }
 
@@ -294,17 +295,17 @@ class Game {
         center_idx1 = Math.floor(Math.random() * 3) + this.players.length;
         center_idx2 = Math.floor(Math.random() * 3) + this.players.length;
       } while (center_idx1 == center_idx2);
-      this.sendPMInGame(sender, "Center peek: `" + this.roles[center_idx1] + "`, `" + this.roles[center_idx2] + "`");
+      this.sendPMInGame(sender, "Center peek: `" + this.roleDeck[center_idx1] + "`, `" + this.roleDeck[center_idx2] + "`");
     }
 
     // peek player card
     else {
-      let targetName = target.slice(1);
-      if (this.playerNames.indexOf(targetName) < 0) {
-        this.sendPMInGame(sender, "There are no players with that username: " + targetName);
+      target = target.substring(2, target.length - 1);
+      if (this.players.indexOf(target) < 0) {
+        this.sendPMInGame(sender, "There are no players with that username: <@" + target + ">");
         return;
       }
-      this.sendPMInGame(sender, targetName + "'s role is `" + this.assignments[targetName].role + "`");
+      this.sendPMInGame(sender, "<@" + target + ">'s role is `" + this.assignments[target] + "`");
     }
     this.nextStep();
   }
@@ -313,10 +314,8 @@ class Game {
     // role check
     let robber = this.filterPlayersByOriginalRole('Robber');
     if (!robber.length) {
-      this.sendPMInGame(sender, "But you're not a Robber!");
-      let senderIdx = this.players.indexOf(sender);
-      let announce = this.playerNames[senderIdx] + " is trying to be a Robber!";
-      this.client.sendMsg(this.channel, announce);
+      this.sendPMInGame(sender, "Hey, you're not a Robber!");
+      this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Robber!");
       return;
     }
 
@@ -326,17 +325,17 @@ class Game {
       return;
     }
 
-    let targetName = target.slice(1);
-    if (this.playerNames.indexOf(targetName) < 0) {
-      this.sendPMInGame(sender, "There are no players with that username: " + targetName);
+    target = target.substring(2, target.length - 1);
+    if (this.players.indexOf(target) < 0) {
+      this.sendPMInGame(sender, "There are no players with that username: <@" + target + ">");
       return;
     }
-    let senderIdx = this.players.indexOf(sender);
-    let senderName = this.playerNames[senderIdx];
-    let oldRole = this.assignments[senderName].role;
-    let newRole = this.assignments[targetName].role;
-    this.assignments[senderName].role = newRole;
-    this.assignments[targetName].role = oldRole;
+    let oldRole = this.assignments[sender];
+    // FIXME
+    let newRole = this.assignments[target];
+    this.assignments[sender] = newRole;
+    // FIXME
+    this.assignments[target] = oldRole;
     this.sendPMInGame(sender, "Your new role is `" + newRole + "`");
     this.nextStep();
   }
@@ -345,10 +344,8 @@ class Game {
     // role check
     let troublemaker = this.filterPlayersByOriginalRole('Troublemaker');
     if (!troublemaker.length) {
-      this.sendPMInGame(sender, "But you're not a Troublemaker!");
-      let senderIdx = this.players.indexOf(sender);
-      let announce = this.playerNames[senderIdx] + " is trying to be a Troublemaker!";
-      this.client.sendMsg(this.channel, announce);
+      this.sendPMInGame(sender, "Hey, you're not a Troublemaker!");
+      this.client.sendMsg(this.channel, "<@" + sender + "> is trying to be a Troublemaker!");
       return;
     }
 
@@ -358,20 +355,21 @@ class Game {
       return;
     }
 
-    let targetName1 = target1.slice(1);
-    if (this.playerNames.indexOf(targetName1) < 0) {
-      this.sendPMInGame(sender, "There are no players with that username: " + targetName1);
+    target1 = target1.substring(2, target1.length - 1);
+    if (this.players.indexOf(target1) < 0) {
+      this.sendPMInGame(sender, "There are no players with that username: <@" + target1 + ">");
       return;
     }
-    let targetName2 = target2.slice(1);
-    if (this.playerNames.indexOf(targetName2) < 0) {
-      this.sendPMInGame(sender, "There are no players with that username: " + targetName2);
+    target2 = target2.substring(2, target2.length - 1);
+    if (this.players.indexOf(target2) < 0) {
+      this.sendPMInGame(sender, "There are no players with that username: <@" + target2 + ">");
       return;
     }
-    let role1 = this.assignments[targetName1].role;
-    let role2 = this.assignments[targetName2].role;
-    this.assignments[targetName1].role = role2;
-    this.assignments[targetName2].role = role1;
+    // FIXME
+    let role1 = this.assignments[target1];
+    let role2 = this.assignments[target2];
+    this.assignments[target1] = role2;
+    this.assignments[target2] = role1;
     this.sendPMInGame(sender, "You swapped their cards");
     this.nextStep();
   }
@@ -379,15 +377,21 @@ class Game {
   lynchingVote(sender, target) {
     // check current turn
     if (this.currentTurn != 'Voting') {
-      this.sendPMInGame(sender, "This is not the right time");
+      this.client.sendMsg(this.channel, "This is not the right time");
       return;
     }
     // TODO: implementation
-    let targetName = target.slice(1);
-    if (this.playerNames.indexOf(targetName) < 0) {
-      this.sendPMInGame(sender, "There are no players with that username: " + targetName);
+    target = target.substring(2, target.length - 1);
+    if (this.players.indexOf(target) < 0) {
+      this.client.sendMsg(this.channel, "There are no players with that username: <@" + target + ">");
       return;
     }
+
+    // FIXME: Let's use names instead
+    if (!this.votes.hasOwnProperty(target)) {
+      this.votes[target] = [];
+    }
+    this.votes[target].push(sender);
   }
 
   forceEnd() {
