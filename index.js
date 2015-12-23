@@ -12,6 +12,7 @@ var slack = new slackAPI({
 });
 
 var games = {};
+var registry = {};
 
 slack.on('message', function (message) {
   if (message.text.startsWith(CMD_PREFIX + ' ')) {
@@ -30,32 +31,51 @@ slack.on('message', function (message) {
         return;
       }
       games[channel] = new Game(slack, channel, args);
+      registry[games[channel].gameID] = channel;
     }
 
-    else if (command == 'peek') {
+    else if (command.startsWith('peek')) {
       if (!channel.startsWith('D')) {
         slack.sendMsg(channel, "You just can't peek at cards blatantly");
         return;
       }
-      // FIXME: get REAL channel
+      let gameID = command.split('-')[1];
+      if (!registry.hasOwnProperty(gameID)) {
+        slack.sendMsg(channel, "Can't find a game to do this action...");
+        return;
+      }
+      // TODO: currentTurn check
+      channel = registry[gameID];
       games[channel].seerPeek(message.user, args[0]);
     }
 
-    else if (command == 'rob') {
+    else if (command.startsWith('rob')) {
       if (!channel.startsWith('D')) {
         slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
-      // FIXME: get REAL channel
+      let gameID = command.split('-')[1];
+      if (!registry.hasOwnProperty(gameID)) {
+        slack.sendMsg(channel, "Can't find a game to do this action...");
+        return;
+      }
+      // TODO: currentTurn check
+      channel = registry[gameID];
       games[channel].robberRob(message.user, args[0]);
     }
 
-    else if (command == 'swap') {
+    else if (command.startsWith('swap')) {
       if (!channel.startsWith('D')) {
         slack.sendMsg(channel, "Please don't cause trouble");
         return;
       }
-      // FIXME: get REAL channel
+      let gameID = command.split('-')[1];
+      if (!registry.hasOwnProperty(gameID)) {
+        slack.sendMsg(channel, "Can't find a game to do this action...");
+        return;
+      }
+      // TODO: currentTurn check
+      channel = registry[gameID];
       games[channel].troublemakerSwap(message.user, args[0], args[1]);
     }
 
@@ -64,6 +84,8 @@ slack.on('message', function (message) {
         slack.sendMsg(channel, "You can't do this through PM");
         return;
       }
+      // TODO: currentTurn check
+      games[channel].lynchingVote(message.user, args[0]);
     }
 
     else if (command == 'force-end') {

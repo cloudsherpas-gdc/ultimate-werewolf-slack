@@ -60,6 +60,7 @@ class Game {
     this.origAssignments = {};
     this.assignments = {};
     this.gameID = Math.random().toString(36).substr(2, 5);
+    // TODO: Add tracking and checking for current turns and corresponding actions
     this.currentTurn = 'Beginning';
 
     // announce GameID
@@ -221,15 +222,18 @@ class Game {
     }
 
     else if (player.role == 'Seer') {
-      this.sendPMInGame(player.id, "`!w peek center` to peek at 2 center cards or `!w peek @username` to peek at a player's card");
+      this.sendPMInGame(player.id, "`!w peek-" + this.gameID + " center` to peek at 2 center cards or `!w peek-" + this.gameID + " @username` to peek at a player's card");
+      // TODO: Add time limit
     }
 
     else if (player.role == 'Robber') {
-      this.sendPMInGame(player.id, "`!w rob @username` to rob a player");
+      this.sendPMInGame(player.id, "`!w rob-" + this.gameID + " @username` to rob a player");
+      // TODO: Add time limit
     }
 
     else if (player.role == 'Troublemaker') {
-      this.sendPMInGame(player.id, "`!w swap @userA @userB` to swap the players' cards");
+      this.sendPMInGame(player.id, "`!w swap-" + this.gameID + " @userA @userB` to swap the players' cards");
+      // TODO: Add time limit
     }
 
     else if (player.role == 'Drunk') {
@@ -332,8 +336,8 @@ class Game {
     this.nextStep();
   }
 
-  lynchingVote() {
-    //
+  lynchingVote(sender, target) {
+    // TODO: implementation
   }
 
   forceEnd() {
