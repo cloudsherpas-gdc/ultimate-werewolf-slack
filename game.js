@@ -114,7 +114,7 @@ class Game {
     let idx = this.players.indexOf(this.client.slackData.self.id);
     if (idx >= 0) this.players.splice(idx, 1);
     // limit players to # of roles
-    this.players = this.players.slice(0, DECK.length);
+    this.players = this.players.slice(0, DECK.length - 3);
     let announce = 'The players (' + this.players.length + '): <@' + this.players.join('>, <@') + ">";
     this.client.sendMsg(this.channel, announce);
   }
@@ -179,7 +179,7 @@ class Game {
   }
 
   remindVoters(elapsedTime) {
-    this.client.sendMsg(this.channel, "Remaining time to vote: `" + (VOTING_PHASE - (elapsedTime / 60000)) + " minutes`");
+    this.client.sendMsg(this.channel, "Remaining time to vote: `" + (VOTING_PHASE - (elapsedTime / 60000)) + " minutes`. Type `!w vote @username` to vote.");
     this.showResults(false);
   }
 
@@ -216,6 +216,11 @@ class Game {
     }
     else {
       this.client.sendMsg(this.channel, "<@" + toBeLynched + "> is a... `" + this.roles[toBeLynched] + "`!");
+      let cast = [];
+      Object.keys(this.roles).forEach((function(player) {
+        cast.push("<@" + player + "> is the `" + this.roles[player] + "`");
+      }).bind(this));
+      this.client.sendMsg(this.channel, cast.join(', '));
       if (this.roles[toBeLynched] == 'Werewolf') {
         this.winner = "Village Team";
         this.winningPlayers = Object.keys(this.roles).filter(player => ['Werewolf', 'Minion'].indexOf(this.roles[player]) < 0);
@@ -254,7 +259,7 @@ class Game {
   initiateRoleSequence(role) {
     return new Promise((function(resolve, reject) {
         this.nextStep = resolve;
-        let playersThisTurn = this.filterPlayersByRole(role);
+        let playersThisTurn = this.filterPlayersByOriginalRole(role);
         if (playersThisTurn.length) {
           playersThisTurn.forEach(
             (function(player) {
@@ -276,12 +281,6 @@ class Game {
       );
   }
 
-  filterPlayersByRole(role) {
-    return Object.keys(this.roles).filter(
-        player => role === this.roles[player]
-      );
-  }
-
   sendPMInGame(recipient, message) {
     if (this.channel.startsWith('C')) {
       this.client.sendPM(recipient, "[`" + this.gameID + "`|<#" + this.channel +">] " + message);
@@ -293,7 +292,7 @@ class Game {
 
   executePlayerTurn(player, role) {
     if (role == 'Werewolf') {
-      let werewolves = this.filterPlayersByRole('Werewolf');
+      let werewolves = this.filterPlayersByOriginalRole('Werewolf');
       if (werewolves.length > 1) {
         // give a list of werewolves
         this.sendPMInGame(player, "Werewolves: <@" + werewolves.join('> & <@') + ">");
@@ -307,9 +306,9 @@ class Game {
     }
 
     else if (role == 'Minion') {
-      let werewolves = this.filterPlayersByRole('Werewolf');
+      let werewolves = this.filterPlayersByOriginalRole('Werewolf');
       if (werewolves.length) {
-        this.sendPMInGame(player, "Werewolves: " + werewolves.join(' & '));
+        this.sendPMInGame(player, "Werewolves: <@" + werewolves.join('> & <@') + ">");
       }
       else {
         this.sendPMInGame(player, "Werewolves: _None_, survive on your own!");
@@ -407,6 +406,7 @@ class Game {
 
     // check current turn
     if (!this.currentTurn.startsWith('Seer')) {
+      console.log(this.currentTurn);
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -419,6 +419,9 @@ class Game {
         center_idx1 = Math.floor(Math.random() * 3) + this.players.length;
         center_idx2 = Math.floor(Math.random() * 3) + this.players.length;
       } while (center_idx1 == center_idx2);
+      console.log(this.roleDeck);
+      console.log(center_idx1);
+      console.log(center_idx2);
       this.sendPMInGame(sender, "Center peek: `" + this.roleDeck[center_idx1] + "`, `" + this.roleDeck[center_idx2] + "`");
     }
 
@@ -429,7 +432,7 @@ class Game {
         this.sendPMInGame(sender, "There are no players with that username: <@" + target + ">");
         return;
       }
-      this.sendPMInGame(sender, "<@" + target + ">'s role is `" + this.roles[target] + "`");
+      this.sendPMInGame(sender, "<@" + target + ">'s card is `" + this.roles[target] + "`");
     }
     this.nextStep();
   }
@@ -444,6 +447,7 @@ class Game {
 
     // check current turn
     if (!this.currentTurn.startsWith('Robber')) {
+      console.log(this.currentTurn);
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -457,7 +461,7 @@ class Game {
     let newRole = this.roles[target];
     this.roles[sender] = newRole;
     this.roles[target] = oldRole;
-    this.sendPMInGame(sender, "Your new role is `" + this.roles[sender] + "`");
+    this.sendPMInGame(sender, "You robbed <@" + target + "> and your new role is `" + this.roles[sender] + "`");
     this.nextStep();
   }
 
@@ -471,6 +475,7 @@ class Game {
 
     // check current turn
     if (!this.currentTurn.startsWith('Troublemaker')) {
+      console.log(this.currentTurn);
       this.sendPMInGame(sender, "This is not the right time");
       return;
     }
@@ -494,8 +499,7 @@ class Game {
     let role2 = this.roles[target2];
     this.roles[target1] = role2;
     this.roles[target2] = role1;
-    // TODO: Indicate names
-    this.sendPMInGame(sender, "You swapped their cards");
+    this.sendPMInGame(sender, "You swapped <@" + target1 + ">'s and <@" + target2 + ">'s cards");
     this.nextStep();
   }
 
@@ -547,9 +551,16 @@ class Game {
 
 }
 
-function shuffle(o) {
-  for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-  return o;
+function shuffle(array) {
+  var counter = array.length, temp, index;
+  while (counter > 0) {
+    index = Math.floor(Math.random() * counter);
+    counter--;
+    temp = array[counter];
+    array[counter] = array[index];
+    array[index] = temp;
+  }
+  return array;
 }
 
 module.exports = Game;
